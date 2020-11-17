@@ -4,13 +4,13 @@
 %
 % clf   - an fmriDataPredictor object
 %
-% cv    - a function handel to a method that takes an fmri_data and target
+% cv    - a function handle to a method that takes an fmri_data and target
 %           value as input, cv(fmri_data, Y) and returns a cvpartition
 %           object.
 %
 % (optional)
 %
-% repartitionOnFit - whether cv should be reinitialized when fitting. To
+% repartOnFit - whether cv should be reinitialized when fitting. To
 %         use a predetermined cv object for fitting simply provide a
 %         cvPredictor = cvPredictor.set_cvpart(cvpartition);
 %         after initialization. Useful for classifier comparison.
