@@ -32,15 +32,24 @@ classdef plsRegressor < fmriDataPredictor & yFit
             
             [~,~,~,mdl] = evalc(['dat.predict(''algorithm_name'', obj.algorithm_name,', ...
                 '''numcomponents'', obj.numcomponents,''nfolds'', 1)']);
-            obj.weights = mdl{1};
+            
+            obj.weights = fmri_data(dat.get_wh_image(1));
+            obj.weights.dat = mdl{1}(:);
+            fnames = {'images_per_session', 'Y', 'Y_names', 'Y_descrip', 'covariates',...
+                'additional_info', 'metadata_table', 'dat_descrip', 'image_names', 'fullpath'};
+            for field = fnames
+                obj.weights.(field{1}) = [];
+            end
+            obj.weights.history = {[class(obj), ' fit']};
+            
             obj.offset = mdl{2};
             
             obj.isFitted = true;
         end
         
-        function yfit = predict(obj,dat)
-            assert(obj.isFitted,'Please call plsRegressor.fit() before plsRegressor.predict().');
-            yfit = obj.weights(:)'*dat.dat + obj.offset;
+        function yfit = predict(obj, dat)
+            assert(obj.isFitted,sprintf('Please call %s.fit() before %s.predict().\n',class(obj)));
+            yfit = apply_mask(dat, obj.weights, 'pattern_expression', 'dotproduct', 'none') + obj.offset;
             yfit = yfit(:);
         end
         
