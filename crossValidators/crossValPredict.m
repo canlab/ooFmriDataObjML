@@ -6,7 +6,8 @@
 %
 % cv    - a function handle to a method that takes an fmri_data and target
 %           value as input, cv(fmri_data, Y) and returns a cvpartition
-%           object.
+%           object. Any fields of fmri_data referenced must be preserved
+%           across obj.cat and obj.get_wh_image() invocations.
 %
 % (optional)
 %
@@ -70,7 +71,11 @@ classdef crossValPredict < crossValidator & yFit
         function obj = do(obj, dat, Y)
             t0 = tic;
             if obj.repartOnFit || isempty(obj.cvpart)
-                obj.cvpart = obj.cv(dat, Y);
+                try
+                    obj.cvpart = obj.cv(dat, Y);
+                catch
+                    keyboard
+                end
             end
             
             obj.fold_lbls = zeros(length(Y),1);
@@ -110,9 +115,9 @@ classdef crossValPredict < crossValidator & yFit
                 for i = 1:obj.cvpart.NumTestSets
                     obj.yfit(obj.fold_lbls == i) = yfit{i};
                 end
-                obj.foldClf = this_foldClf;
             end
             
+            obj.foldClf = this_foldClf;
             obj.Y = Y;
             obj.evalTime = toc(t0);
         end

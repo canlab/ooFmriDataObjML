@@ -1,7 +1,6 @@
 classdef (Abstract) fmriDataPredictor
     methods (Abstract)
         fit(obj)
-        predict(obj)
         
         % should return an objects hyperparameter variable names
         get_params(obj)
@@ -18,6 +17,12 @@ classdef (Abstract) fmriDataPredictor
                 sprintf('%s is not a hyperparameter of %s\n', hyp_name, class(obj)));
             
             obj.(hyp_name) = hyp_val;
+        end
+        
+        function yfit = predict(obj, dat)
+            assert(obj.isFitted,sprintf('Please call %s.fit() before %s.predict().\n',class(obj)));
+            yfit = apply_mask(dat, obj.weights, 'pattern_expression', 'dotproduct', 'none') + obj.offset;
+            yfit = yfit(:);
         end
     end
 end

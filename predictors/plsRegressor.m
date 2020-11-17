@@ -1,6 +1,7 @@
 classdef plsRegressor < fmriDataPredictor & yFit
     properties
         numcomponents = 1;
+        fast = false;
     end
     
     properties (SetAccess = private)
@@ -8,6 +9,7 @@ classdef plsRegressor < fmriDataPredictor & yFit
         offset = 0;
         
         isFitted = false;
+        fitTime = -1;
     end
     
     properties (Access = private)
@@ -21,12 +23,15 @@ classdef plsRegressor < fmriDataPredictor & yFit
                     switch(varargin{i})
                         case 'numcomponents'
                             obj.numcomponents = varargin{i+1};
+                        case 'fast'
+                            obj.fast = true;
                     end
                 end
             end
         end
         
         function obj = fit(obj, dat, Y)
+            t0 = tic;
             assert(size(dat.dat,2) == length(Y), 'length(Y) ~= size(dat.dat,2)');
             dat.Y = Y;
             
@@ -45,11 +50,16 @@ classdef plsRegressor < fmriDataPredictor & yFit
             obj.offset = mdl{2};
             
             obj.isFitted = true;
+            obj.fitTime = toc(t0);
         end
         
         function yfit = predict(obj, dat)
             assert(obj.isFitted,sprintf('Please call %s.fit() before %s.predict().\n',class(obj)));
-            yfit = apply_mask(dat, obj.weights, 'pattern_expression', 'dotproduct', 'none') + obj.offset;
+            if obj.fast && size(obj.weights.dat,1) == size(dat.dat,1)
+                yfit = obj.weights.dat(:)'*dat.dat + obj.offset;
+            else
+                yfit = apply_mask(dat, obj.weights, 'pattern_expression', 'dotproduct', 'none') + obj.offset;
+            end
             yfit = yfit(:);
         end
         

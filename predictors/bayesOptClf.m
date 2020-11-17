@@ -52,6 +52,7 @@ classdef bayesOptClf < fmriDataPredictor
         cv = @(dat,Y)cvpartition2(ones(length(dat.Y),1),'KFOLD', 5, 'Stratify', dat.metadata_table.subject_id)
         group_id = [];
         scorer = @get_mse;
+        fitTime = -1;
     end
     methods
         function obj = bayesOptClf(clf, cv, scorer, bayesOptOpts)
@@ -70,7 +71,8 @@ classdef bayesOptClf < fmriDataPredictor
             obj.bayesOptOpts = bayesOptOpts;
         end
         
-        function obj = fit(obj, dat, Y)            
+        function obj = fit(obj, dat, Y)  
+            t0 = tic;
             % obj = fit(obj, dat, Y) optimizes the hyperparameters of
             % obj.clf using data in fmri_data object dat and target vector
             % Y.
@@ -84,6 +86,7 @@ classdef bayesOptClf < fmriDataPredictor
             end
             
             obj.clf = obj.clf.fit(dat, Y);
+            obj.fitTime = toc(t0);
         end
         
         function yfit = predict(obj, dat)
