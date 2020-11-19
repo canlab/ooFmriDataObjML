@@ -14,7 +14,6 @@ classdef combatTransformer < fmriDataTransformer
         
         isFitted = false;
         fitTime = -1;
-        transformTime = -1;
     end
     
     methods
@@ -62,8 +61,7 @@ classdef combatTransformer < fmriDataTransformer
         end
         
         function cb_dat = transform(obj, dat)
-            t0 = tic;
-            assert(obj.isFitted,'Please call combatTransformer.fit() before plsRegressor.predict().');
+            assert(obj.isFitted,'Please call combatTransformer.fit() before combatTransformer.transform().');
             
             [~,~,batch_id] = unique(obj.get_batch_id(dat),'stable');
             
@@ -107,7 +105,6 @@ classdef combatTransformer < fmriDataTransformer
             
             % remove reference batch
             cb_dat = dat.get_wh_image(batch_id ~= tmp_ref_id);
-            obj.transformTime = toc(t0);
         end
     end
         
