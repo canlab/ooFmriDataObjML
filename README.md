@@ -14,26 +14,27 @@ than feature construction.
 ### To Do
 scikit learn is powerful in part because it allows for very flexible feature
 construction. This library isn't very good at this because of the way it
-incorporates fmri_data objects into its input. For instance, suppose you wanted
-to develop a classifier that makes predictions based on net contrast in a 
-set of a priori regions of interest. Suppose you select p regions, so now your 
-feature vector is 1 x p. This feature vector no longer has any meaningful 
-representation as an fmri_data object and cannot be supplied as input for any
-of the fmriDataPredictor objetcts in this repo. Nevertheless, some kind of
-fmri_data representation is needed because often times implementing new data
-requires some kind of metadata awareness by the algorithm. For instance, when
-applying a new regressor, we must make sure that the input feature space matches
-the model feature space, which is anatomicaly defined. We also need batch 
-awareness for any algorithms (e.g. cross validation, combat, mlpcr, etc).
+incorporates fmri_data objects into its input. A features must exist in some
+kind of MNI space as a result, but not all features you might want to use
+do exist in this space. Consider if all you're interested in is coarse signals,
+like net activity in a subset of regions of interest. There's no good way to
+represent these features as an fmri_data object, it's much more sensible 
+taken out of brain space. However, you must have some kind of MNI space 
+awareness for testing new input which may not be in the same space.
 
-One way around this might be to create a class that instantiates a particular
-fmri_data object's space, and can project any new fmri_data objects into the 
-original fmri_data objects space. We can then augment the pipeline method to
-accept this class as its first transformer. This doesn't solve the problem of
-how we package metadata with our object (which may often be needed). We can 
-solve this by modifying all do, transform and fit functions to also take a 
-metadata field as input. This field can be empty, but it's also available for 
-anonyous functions various classes might call upon. Given a feature matrix X 
-that is n x p, the metadata field would be constrained to be n x m.
+There are several options for working around this. One is to define a 
+transformer that converts from fmri_data objects to features, and which when
+'fit', saves the reference images space as a property, so that when substequent
+transformations are applied, data can be projected into this space and then
+have its \*.dat field returned. The limitation is that we need a way to 
+package metadata downstream, specifically block id metadata for things like
+group k-fold CV and block aware modeling algorithms (e.g. concensus PCA, mixed
+effects models, etc). Another fix to this might be for all fit, do and transform
+functions to take a third (optionally null) argument that provides metadata.
+The metadata would only need to implement subscripting and concatenation 
+operators, which tables implement, but which can also be implemented for
+abitrary customized classes as indicated here:
+https://www.mathworks.com/help/matlab/matlab_oop/implementing-operators-for-your-class.html
+which allows for flexible metadata use.
 
 
