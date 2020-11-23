@@ -37,4 +37,14 @@ abitrary customized classes as indicated here:
 https://www.mathworks.com/help/matlab/matlab_oop/implementing-operators-for-your-class.html
 which allows for flexible metadata use.
 
-
+Here's a new better idea,
+Overload indexing of fmri_data objects (cat is already implemented). Add a 'size' and
+'length' method to the class in canlabCore (should be an improvement without any
+negative side effects). Convert fmriDataPredictors to invoke a get_X() anonymous 
+function on input data to extract features. This can default to @(x1)(x1.dat') by
+default, but can be modified by class invocation to look elsewhere. You can't use
+fmri_data anywhere in the input to the predictors for this to work, it can't assume
+the existence of fmri_data specific metadata, which will make image fitting
+difficult. Instead create a transformer class that takes fmri_data objects and
+converts them to simple X block aware structures.
+struct('X', dat.dat, 'block_id', dat.metadata_table.block_id);
