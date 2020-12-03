@@ -76,7 +76,8 @@ classdef combatTransformer < fmriDataTransformer
             end
                         
             
-            % append reference batch to list, and remove problematic voxels
+            % append reference batch params to list, and remove problematic 
+            % voxels in side by side comparison
             n = size(dat.dat,2);
             dat = dat.cat(obj.ref_params).remove_empty();
             
@@ -110,8 +111,14 @@ classdef combatTransformer < fmriDataTransformer
         
     methods (Access = private)
         function obj = pick_ref_batch(obj, dat, batch_id)
-            [uniq_batch_id, exp_bach_id] = unique(batch_id,'stable');
+            [uniq_batch_id, exp_batch_id] = unique(batch_id,'stable');
 
+            % skip picking representative batch if we only have one batch
+            if length(exp_batch_id) == 1
+                obj.ref_batch_id = exp_batch_id(1);
+                return 
+            end
+            
             % now let's pick a representative batch to use as the reference
             % given a fixed training set this selection is deterministic
             cmat = []; % within batch centering matrix
@@ -129,10 +136,10 @@ classdef combatTransformer < fmriDataTransformer
             [mdat, sdat] = deal(dat.get_wh_image(1:length(uniq_batch_id)));
 
             sdat.dat = ((dat.dat*cmat).^2)*mumat;
-            sdat.dat = sdat.dat(:,exp_bach_id).^0.5; % this is the voxel-wise std for each subject
+            sdat.dat = sdat.dat(:,exp_batch_id).^0.5; % this is the voxel-wise std for each subject
 
             mdat.dat = dat.dat*mumat;
-            mdat.dat = mdat.dat(:,exp_bach_id); % this is voxel-wise mean for each subject
+            mdat.dat = mdat.dat(:,exp_batch_id); % this is voxel-wise mean for each subject
 
             % sdat.^2 and mdat span the set of reference values combat can
             % normalize to, so let's make sure we pick a typical batch, not some
@@ -328,6 +335,14 @@ classdef combatTransformer < fmriDataTransformer
             wh = cellfun(@(x) isequal(x,intercept),num2cell(design,1));
             bad = find(wh==1);
             design(:,bad)=[];
+            
+            % if we have a single batch, intercept removal will remove it
+            % too, so let's add it back in. This is a hacky solution
+            % though. Shouldn't break anything, but there are more elegant
+            % solutions available.
+            if size(batchmod,2) == 1
+                design = [batchmod, design];
+            end
 
             fprintf('[combat] Adjusting for %d covariate(s) of covariate level(s)\n',size(design,2)-size(batchmod,2))
 
