@@ -1,4 +1,11 @@
 classdef (Abstract) fmriDataPredictor
+    % we can rename fast to cv, and have it be a cross validation specific option
+    % but if we do that we need to make some changes in other scripts as well that
+    % currently set fast to something or other. Consider crossValPredict.m in
+    % particular.
+    %propeties 
+    %    fast = false;
+    %end
     methods (Abstract)
         fit(obj)
         

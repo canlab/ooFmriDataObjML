@@ -108,6 +108,11 @@ classdef crossValPredict < crossValidator & yFit
                     test_dat = dat.get_wh_image(obj.cvpart.test(i));
 
                     this_foldClf{i} = obj.clf.fit(train_dat, train_Y);
+                    % we can always make certain assumptions about the train and test space
+                    % matching when we do cross validation. We could incorporate that here
+                    % elegantly. We have to require fmriDataPredictor objects have a fast
+                    % property though.
+                    % this_foldClf{i} = this_foldClf{i}.fast = true;
                     yfit{i} = this_foldClf{i}.predict(test_dat)';
                     
                     if obj.verbose, fprintf('Completed fold %d/%d\n', i, obj.cvpart.NumTestSets); end

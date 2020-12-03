@@ -46,12 +46,15 @@
 %   yfit = bo.predict(new_dat)
 
 classdef bayesOptClf < fmriDataPredictor
-    properties (SetAccess = private)
+    properties
         bayesOptOpts = [];
         clf = [];
         cv = @(dat,Y)cvpartition2(ones(length(dat.Y),1),'KFOLD', 5, 'Stratify', dat.metadata_table.subject_id)
-        group_id = [];
         scorer = @get_mse;
+    end
+    
+    properties (SetAccess = private)
+        group_id = [];
         fitTime = -1;
     end
     methods
