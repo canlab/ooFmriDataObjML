@@ -57,6 +57,11 @@ classdef bayesOptClf < fmriDataPredictor
         group_id = [];
         fitTime = -1;
     end
+    
+    properties (Access = ?fmriDataPredictor)
+        hyper_params = {};
+    end
+    
     methods
         function obj = bayesOptClf(clf, cv, scorer, bayesOptOpts)
             obj.clf = clf;
@@ -103,15 +108,19 @@ classdef bayesOptClf < fmriDataPredictor
         end
         
         function params = get_params(varargin)
-            warning('This function should not be optimized. It is an optimizer.');
-            params = [];
+            warning('bayesOptClf:get_params','This function should not be optimized. It is an optimizer.');
+            params = {};
         end
         
         function loss = lossFcn(obj, this_hyp, dat, Y)
             % set hyperparameters
             params = obj.clf.get_params();
-            for i = 1:length(params)
-                obj.clf = obj.clf.set_hyp(params{i}, this_hyp.(params{i}));
+            for i = 1:length(this_hyp.Properties.VariableNames)
+                hypname = this_hyp.Properties.VariableNames{i};
+                assert(~isempty(ismember(params, hypname)), ...
+                    sprintf('%s is not a valid hyperparameter for bayes optimization', hypname));
+                
+                obj.clf = obj.clf.set_hyp(hypname, this_hyp.(hypname));
             end
             
             this_cv = crossValPredict(obj.clf, obj.cv, 'repartOnFit', true, 'n_parallel', 1, 'verbose', false);
