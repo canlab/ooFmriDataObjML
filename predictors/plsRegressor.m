@@ -12,8 +12,10 @@ classdef plsRegressor < fmriDataPredictor & yFit
         fitTime = -1;
     end
     
-    properties (Access = private)
+    properties (Access = ?fmriDataPredictor)
         algorithm_name = 'cv_pls';
+        
+        hyper_params = {'numcomponents'};
     end
     
     methods
@@ -61,16 +63,6 @@ classdef plsRegressor < fmriDataPredictor & yFit
                 yfit = apply_mask(dat, obj.weights, 'pattern_expression', 'dotproduct', 'none') + obj.offset;
             end
             yfit = yfit(:);
-        end
-        
-        function params = get_params(obj)
-            params = {'numcomponents'};
-        end
-        
-        function obj = set_hyp(obj, hyp_name, hyp_val)
-            assert(strcmp(hyp_name, 'numcomponents'),...
-                'Only numcomponents supported as a valid hyperparameter');
-            obj.numcomponents = hyp_val;
         end
     end
 end

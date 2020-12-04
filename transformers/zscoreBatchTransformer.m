@@ -7,6 +7,9 @@ classdef zscoreBatchTransformer < fmriDataTransformer
         isFitted = true;
         fitTime = 0;
     end
+    properties (Access = ?fmriDataTransformer)
+        hyper_params = {};
+    end
     
     methods
         function obj = zscoreBatchTransformer(batch_id_funhan)            

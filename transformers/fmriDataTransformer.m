@@ -2,6 +2,9 @@ classdef fmriDataTransformer
     properties (SetAccess = protected)
         fitTransformTime = -1;
     end
+    properties (Abstract, Access = ?fmriDataTransformer)
+        hyper_params;
+    end
     methods (Abstract)
         fit(obj)
         transform(obj)
@@ -12,6 +15,19 @@ classdef fmriDataTransformer
             obj = obj.fit(varargin{:});
             dat = obj.transform(varargin{:});
             obj.fitTransformTime = toc(t0);
+        end
+        
+        function params = get_params(obj)
+            params = obj.hyper_params;
+        end
+        
+        % if a predictor has hyperparameters, this sets them. 
+        function obj = set_hyp(obj, hyp_name, hyp_val)
+            params = obj.get_params();
+            assert(ismember(hyp_name, params), ...
+                sprintf('%s is not a hyperparameter of %s\n', hyp_name, class(obj)));
+            
+            obj.(hyp_name) = hyp_val;
         end
     end
 end

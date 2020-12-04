@@ -8,6 +8,10 @@ classdef functionTransformer < fmriDataTransformer
         fitTime = 0;
     end
     
+    properties (Access = ?fmriDataTransformer)
+        hyper_params = {};
+    end
+    
     methods
         function obj = functionTransformer(funhan)            
             obj.funhan = funhan;

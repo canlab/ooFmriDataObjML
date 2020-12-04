@@ -6,18 +6,20 @@ classdef (Abstract) fmriDataPredictor
     %propeties 
     %    fast = false;
     %end
+    properties (Abstract, Access = ?fmriDataPredictor)
+        hyper_params;
+    end
+    
     methods (Abstract)
         fit(obj)
-        
-        % should return an objects hyperparameter variable names
-        get_params(obj)
     end
     
     methods
+        function params = get_params(obj)
+            params = obj.hyper_params;
+        end
         
-        % if a predictor has hyperparameters, this sets them. They should
-        % be entered in alphabetic order with respect to their property
-        % names
+        % if a predictor has hyperparameters, this sets them. 
         function obj = set_hyp(obj, hyp_name, hyp_val)
             params = obj.get_params();
             assert(ismember(hyp_name, params), ...
@@ -31,5 +33,6 @@ classdef (Abstract) fmriDataPredictor
             yfit = apply_mask(dat, obj.weights, 'pattern_expression', 'dotproduct', 'none') + obj.offset;
             yfit = yfit(:);
         end
+        
     end
 end

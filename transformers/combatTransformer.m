@@ -2,7 +2,7 @@
 % variance instead of entire reference batch
 classdef combatTransformer < fmriDataTransformer
     properties
-        combat_opts = 1;
+        combat_opts = {[], 1};
     end
     
     properties (SetAccess = private)
@@ -14,6 +14,10 @@ classdef combatTransformer < fmriDataTransformer
         
         isFitted = false;
         fitTime = -1;
+    end
+    
+    properties (Access = ?fmriDataTransformer)
+        hyper_params = {'parametric'};
     end
     
     methods
@@ -106,6 +110,17 @@ classdef combatTransformer < fmriDataTransformer
             
             % remove reference batch
             cb_dat = dat.get_wh_image(batch_id ~= tmp_ref_id);
+        end
+        
+        function obj = set_hyp(obj, hyp_name, hyp_val)
+            params = obj.get_params();
+            assert(ismember(hyp_name, params), ...
+                sprintf('%s is not a hyperparameter of %s\n', hyp_name, class(obj)));
+            
+            if ismember(hyp_name, 'parametric')
+                assert(ismember(hyp_val,[0,1]), 'parametric flag must be 0/1')
+                obj.combat_opts{2} = hyp_val;
+            end
         end
     end
         
