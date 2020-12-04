@@ -131,7 +131,7 @@ classdef pipeline < fmriDataPredictor & fmriDataTransformer
             end
         end
         
-        function obj = set_tansformer(obj,transformers)
+        function obj = set_transformer(obj,transformers)
             obj.transformers = transformers;
             obj.isFitted = false;
         end

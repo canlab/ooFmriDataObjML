@@ -1,8 +1,8 @@
 % crossValPredict performs cross validated prediction
 %
-% cvPredictor = crossValPredict(clf cv, varargin)
+% cvPredictor = crossValPredict(predictor, cv, varargin)
 %
-% clf   - an fmriDataPredictor object
+% predictor   - an fmriDataPredictor object
 %
 % cv    - a function handle to a method that takes an fmri_data and target
 %           value as input, cv(fmri_data, Y) and returns a cvpartition
@@ -22,11 +22,13 @@
 %
 % crossValPredict properties:
 %   cvpart  - cvpartition object used during last fit call
-%   clf     - classifier used in last fit call
+%   predictor
+%	    - classifier used in last fit call
 %   yfit    - most recent fitted values (cross validated)
 %   Y       - most recent observed values
 %   yfit_null - null predictions (cross validated)
-%   foldClf - predictor objects use for each fold in fit() call. Useful
+%   foldPredictor
+%           - predictor objects use for each fold in fit() call. Useful
 %               when hyperparameters differ across folds
 %
 % crossValPredict methods:
@@ -44,14 +46,14 @@ classdef crossValPredict < crossValidator & yFit
     
     properties (SetAccess = private)
         evalTime = -1;
-        foldClf = {};
+        foldPredictor = {};
     end
     
     methods
-        function obj = crossValPredict(clf, cv, varargin)
-            assert(isa(clf,'fmriDataPredictor'), 'clf must be type fmriDataPredictor');
+        function obj = crossValPredict(predictor, cv, varargin)
+            assert(isa(predictor,'fmriDataPredictor'), 'predictor must be type fmriDataPredictor');
             
-            obj.clf = clf;
+            obj.predictor = predictor;
             if ~isempty(cv), obj.cv = cv; end
             
             for i = 1:length(varargin)
@@ -84,7 +86,7 @@ classdef crossValPredict < crossValidator & yFit
             end
             
             obj.yfit = zeros(length(Y),1);
-            this_foldClf = cell(obj.cvpart.NumTestSets,1);
+            this_foldPredictor = cell(obj.cvpart.NumTestSets,1);
             if obj.n_parallel == 1            
                 for i = 1:obj.cvpart.NumTestSets
                     if obj.verbose, fprintf('Fold %d/%d\n', i, obj.cvpart.NumTestSets); end
@@ -94,8 +96,8 @@ classdef crossValPredict < crossValidator & yFit
 
                     test_dat = dat.get_wh_image(obj.cvpart.test(i));
 
-                    this_foldClf{i} = obj.clf.fit(train_dat, train_Y);
-                    obj.yfit(obj.fold_lbls == i) = this_foldClf{i}.predict(test_dat);
+                    this_foldPredictor{i} = obj.predictor.fit(train_dat, train_Y);
+                    obj.yfit(obj.fold_lbls == i) = this_foldPredictor{i}.predict(test_dat);
                 end
             else
                 if ~isempty(gcp('nocreate')), delete(gcp('nocreate')); end
@@ -107,13 +109,13 @@ classdef crossValPredict < crossValidator & yFit
 
                     test_dat = dat.get_wh_image(obj.cvpart.test(i));
 
-                    this_foldClf{i} = obj.clf.fit(train_dat, train_Y);
+                    this_foldPredictor{i} = obj.predictor.fit(train_dat, train_Y);
                     % we can always make certain assumptions about the train and test space
                     % matching when we do cross validation. We could incorporate that here
                     % elegantly. We have to require fmriDataPredictor objects have a fast
                     % property though.
-                    % this_foldClf{i} = this_foldClf{i}.fast = true;
-                    yfit{i} = this_foldClf{i}.predict(test_dat)';
+                    % this_foldPredictor{i} = this_foldPredictor{i}.fast = true;
+                    yfit{i} = this_foldPredictor{i}.predict(test_dat)';
                     
                     if obj.verbose, fprintf('Completed fold %d/%d\n', i, obj.cvpart.NumTestSets); end
                 end
@@ -122,7 +124,7 @@ classdef crossValPredict < crossValidator & yFit
                 end
             end
             
-            obj.foldClf = this_foldClf;
+            obj.foldPredictor = this_foldPredictor;
             obj.Y = Y;
             obj.evalTime = toc(t0);
         end
