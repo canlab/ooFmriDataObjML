@@ -4,7 +4,7 @@ classdef (Abstract) crossValidator < yFit
         cv = @(dat, Y)cvpartition2(ones(length(dat.Y),1),'KFOLD', 5, 'Stratify', dat.metadata_table.subject_id);
         n_parallel = 1;
         
-        clf = [];
+        predictor = [];
     end
     
     properties (SetAccess = protected)

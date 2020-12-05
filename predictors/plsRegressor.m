@@ -65,4 +65,10 @@ classdef plsRegressor < fmriDataPredictor & yFit
             yfit = yfit(:);
         end
     end
+    
+    methods (Access = {?crossValidator, ?fmriDataTransformer, ?fmriDataPredictor})
+        function obj = compress(obj)
+            obj.weights = obj.weights.dat;
+        end
+    end
 end

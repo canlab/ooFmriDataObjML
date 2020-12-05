@@ -123,6 +123,12 @@ classdef combatTransformer < fmriDataTransformer
             end
         end
     end
+    
+    methods (Access = {?crossValidator, ?fmriDataPredictor, ?fmriDataTransformer})
+        function obj = compress(obj)
+            obj.ref_params = [];
+        end
+    end
         
     methods (Access = private)
         function obj = pick_ref_batch(obj, dat, batch_id)

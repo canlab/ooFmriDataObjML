@@ -165,6 +165,12 @@ classdef crossValPredict < crossValidator & yFit
         function obj = repartition(obj)
             obj.cvpart = obj.cvpart.repartition;
         end
+        
+        function obj = compress(obj)
+            for i = 1:length(obj.foldPredictor)
+                obj.foldPredictor{i} = obj.foldPredictor{i}.compress();
+            end
+        end
     end
 end
     

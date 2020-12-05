@@ -35,4 +35,10 @@ classdef (Abstract) fmriDataPredictor
         end
         
     end
+    
+    methods (Access = {?crossValidator, ?fmriDataPredictor, ?fmriDataTransformer})
+        function obj = compress(obj)
+            return
+        end
+    end
 end
