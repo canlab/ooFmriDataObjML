@@ -3,8 +3,10 @@ classdef pipeline < fmriDataPredictor & fmriDataTransformer
         verbose = false;
     end
     properties (SetAccess = private)
-        transformers = [];
-        predictor = [];
+        transformers = {};
+        transformer_names = {};
+        predictor = {};
+        predictor_name = [];
         
         isFitted = false;
         
@@ -18,14 +20,17 @@ classdef pipeline < fmriDataPredictor & fmriDataTransformer
     methods
         function obj = pipeline(steps, varargin)
             for i = 1:length(steps) - 1
-                assert(isa(steps{i}, 'fmriDataTransformer'), 'All but last step must be transformers');
+                assert(isa(steps{i}{2}, 'fmriDataTransformer'), 'All but last step must be transformers');
                 
-                obj.transformers{end+1} = steps{i};
+                obj.transformer_names{end+1} = steps{i}{1};
+                obj.transformers{end+1} = steps{i}{2};
             end
-            if isa(steps{end},'fmriDataPredictor')
-                obj.predictor = steps{end};
-            elseif isa(steps{end},'fmriDataTransformer')
-                obj.transformers{end+1} = steps{end};
+            if isa(steps{end}{2},'fmriDataPredictor')
+                obj.predictor_name = steps{end}{1};
+                obj.predictor = steps{end}{2};
+            elseif isa(steps{end}{2},'fmriDataTransformer')
+                obj.transformer_names{end+1} = steps{end}{1};
+                obj.transformers{end+1} = steps{end}{2};
             else
                 error('Last step must be a transformer or a predictor');
             end
@@ -39,28 +44,23 @@ classdef pipeline < fmriDataPredictor & fmriDataTransformer
                 end
             end
             
-            % set hyperparameters to match whatever the constituent class'
+            % set hyperparameters to match whatever the constituent step
             % hyperparameters are
             params = {};
             for i = 1:length(obj.transformers)
                 these_params = obj.transformers{i}.get_params();
-                params = [params, cellfun(@(x1)([class(obj.transformers{i}), '__', x1]), ...
+                params = [params, cellfun(@(x1)([obj.transformer_names{i}, '__', x1]), ...
                    these_params, 'UniformOutput', false)];
             end
             if ~isempty(obj.predictor)
                 warning('off','bayesOptClf:get_params')
                 these_params = obj.predictor.get_params();
                 warning('on','bayesOptClf:get_params');
-                params = [params, cellfun(@(x1)([class(obj.predictor), '__', x1]), these_params, 'UniformOutput', false)];
+                
+                params = [params, cellfun(@(x1)([obj.predictor_name, '__', x1]), these_params, 'UniformOutput', false)];
             end
             
             obj.hyper_params = params;
-            
-            % redundant classes among transformers will break
-            % implementation of pipeline.set_hyp(), so check for it.
-            transformerClasses = cellfun(@class, obj.transformers,'UniformOutput',false);
-            assert(length(unique(transformerClasses)) == length(transformerClasses), ...
-                'Repeated use of the same transformer class is not supported. Consider wrapping transformer replicates in a pipeline and nesting pipelines as a workaround.');
         end
         
         % fit all transformers and any predictors
@@ -68,11 +68,11 @@ classdef pipeline < fmriDataPredictor & fmriDataTransformer
             t0 = tic;
             for i = 1:length(obj.transformers)
                 % output from one transformer is input to the next
-                fprintf('Fitting %s\n', class(obj.transformers{i}));
+                fprintf('Fitting %s\n', obj.transformer_names{i});
                 [obj.transformers{i}, dat] = obj.transformers{i}.fit_transform(dat);            
             end
             if ~isempty(obj.predictor)
-                fprintf('Fitting %s\n', class(obj.predictor));
+                fprintf('Fitting %s\n', obj.predictor_name);
                 
                 obj.predictor = obj.predictor.fit(dat, Y);
             end
@@ -84,7 +84,7 @@ classdef pipeline < fmriDataPredictor & fmriDataTransformer
         % apply all transforms
         function dat = transform(obj, dat)
             for i = 1:length(obj.transformers)
-                fprintf('Applying %s\n', class(obj.transformers{i}));
+                fprintf('Applying %s\n', obj.transformer_names{i});
                 % output from one transformer is input to the next
                 dat = obj.transformers{i}.transform(dat);
             end
@@ -97,7 +97,7 @@ classdef pipeline < fmriDataPredictor & fmriDataTransformer
             
             dat = obj.transform(dat);
             if ~isempty(obj.predictor)
-                fprintf('Applying %s\n', class(obj.predictor));
+                fprintf('Applying %s\n', obj.predictor_name);
                 yfit = obj.predictor.predict(dat);
             end
         end
@@ -116,14 +116,14 @@ classdef pipeline < fmriDataPredictor & fmriDataTransformer
         function obj = set_hyp(obj, hyp_name, hyp_val)
             hyp_name = strsplit(hyp_name,'__');
             for i = 1:length(obj.transformers)
-                if strcmp(hyp_name{1},class(obj.transformers{i}))
+                if strcmp(hyp_name{1}, obj.transformer_names{i})
                     passThrough = strjoin(hyp_name(2:end),'__');
                     obj.transformers{i} = obj.transformers{i}.set_hyp(passThrough, hyp_val);
                     return
                 end
             end
             for i = 1:length(obj.predictor)
-                if strcmp(hyp_name{1},class(obj.predictor))
+                if strcmp(hyp_name{1}, obj.predictor_name)
                     passThrough = strjoin(hyp_name(2:end),'__');
                     obj.predictor = obj.predictor.set_hyp(passThrough, hyp_val);
                     return
@@ -132,13 +132,46 @@ classdef pipeline < fmriDataPredictor & fmriDataTransformer
         end
         
         function obj = set_transformer(obj,transformers)
-            obj.transformers = transformers;
+            obj.transformer = {};
+            obj.transformer_names = {};
+            
+            for i = 1:length(transformers)
+                assert(isa(transformers{i}{2}, 'fmriDataTransformer'), 'All steps must be fmriDataTransformer');
+                
+                obj.transformer_names{end+1} = transformers{i}{1};
+                obj.transformers{end+1} = transformers{i}{2};
+            end
+            
             obj.isFitted = false;
         end
         
         function obj = set_predictor(obj,predictor)
-            obj.predictor = predictor;
+            obj.predictor = {};
+            obj.predictor_names  = {};
+            
+            for i = 1:length(predictor)
+                assert(isa(predictor{i}{2}, 'fmriDataPredictor'), 'Predictor must be fmriDataPredictor');
+                
+                obj.predictor_names{end+1} = predictor{i}{1};
+                obj.predictor{end+1} = predictor{i}{2};
+            end
+            
             obj.isFitted = false;
+        end
+    end
+    
+    methods (Access = {?crossValidator, ?fmriDataPredictor, ?fmriDataTransformer})
+        % cross validators save instances of each folds' objects. These can
+        % end up taking up a lot of memory, and it is convenient at times
+        % to erase fold objects to save space. What objects are erased are
+        % handeled on a class by class basis, but this invokes all of them.
+        function obj = compress(obj)
+            for i = 1:length(obj.transformers)
+                obj.transformers{i} = obj.transformers{i}.compress();
+            end
+            if ~isempty(obj.predictor)
+                obj.predictor = obj.predictor.compress();
+            end
         end
     end
 end
