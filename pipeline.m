@@ -145,16 +145,11 @@ classdef pipeline < fmriDataPredictor & fmriDataTransformer
             obj.isFitted = false;
         end
         
-        function obj = set_predictor(obj,predictor)
-            obj.predictor = {};
-            obj.predictor_names  = {};
-            
-            for i = 1:length(predictor)
-                assert(isa(predictor{i}{2}, 'fmriDataPredictor'), 'Predictor must be fmriDataPredictor');
-                
-                obj.predictor_names{end+1} = predictor{i}{1};
-                obj.predictor{end+1} = predictor{i}{2};
-            end
+        function obj = set_predictor(obj,predictor)            
+            assert(isa(predictor{2}, 'fmriDataPredictor'), 'Predictor must be fmriDataPredictor');
+
+            obj.predictor_name = predictor{1};
+            obj.predictor = predictor{2};
             
             obj.isFitted = false;
         end

@@ -5,6 +5,8 @@ classdef plsRegressor < fmriDataPredictor & yFit
     end
     
     properties (SetAccess = private)
+        algorithm_name = 'cv_pls';
+        
         weights = fmri_data();
         offset = 0;
         
@@ -13,7 +15,6 @@ classdef plsRegressor < fmriDataPredictor & yFit
     end
     
     properties (Access = ?fmriDataPredictor)
-        algorithm_name = 'cv_pls';
         
         hyper_params = {'numcomponents'};
     end
@@ -40,6 +41,8 @@ classdef plsRegressor < fmriDataPredictor & yFit
             [~,~,~,mdl] = evalc(['dat.predict(''algorithm_name'', obj.algorithm_name,', ...
                 '''numcomponents'', obj.numcomponents,''nfolds'', 1)']);
             
+            % this needs a solution for when image 1 differs in voxel count
+            % from the full dataset
             obj.weights = fmri_data(dat.get_wh_image(1));
             obj.weights.dat = mdl{1}(:);
             fnames = {'images_per_session', 'Y', 'Y_names', 'Y_descrip', 'covariates',...

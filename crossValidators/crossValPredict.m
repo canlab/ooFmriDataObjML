@@ -46,7 +46,7 @@ classdef crossValPredict < crossValidator & yFit
     
     properties (SetAccess = private)
         evalTime = -1;
-        foldPredictor = {};
+        %foldPredictor = {};
     end
     
     methods
@@ -127,6 +127,7 @@ classdef crossValPredict < crossValidator & yFit
             obj.foldPredictor = this_foldPredictor;
             obj.Y = Y;
             obj.evalTime = toc(t0);
+            obj.is_done = true;
         end
         
         function obj = do_null(obj, varargin)
@@ -160,6 +161,7 @@ classdef crossValPredict < crossValidator & yFit
            obj.yfit_null = [];
            obj.evalTime = -1;
            obj.fold_lbls = [];
+           obj.is_done = false;
         end
         
         function obj = repartition(obj)

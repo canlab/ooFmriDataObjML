@@ -10,6 +10,8 @@ classdef (Abstract) crossValidator < yFit
     properties (SetAccess = protected)
         fold_lbls = [];
         cvpart = [];
+        foldPredictor = {};
+        is_done = false;
     end
     
     methods (Abstract)

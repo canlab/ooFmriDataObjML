@@ -3,8 +3,8 @@ classdef (Abstract) fmriDataPredictor
     % but if we do that we need to make some changes in other scripts as well that
     % currently set fast to something or other. Consider crossValPredict.m in
     % particular.
-    %propeties 
-    %    fast = false;
+    %properties 
+    %    fast;
     %end
     properties (Abstract, Access = ?fmriDataPredictor)
         hyper_params;
@@ -40,5 +40,11 @@ classdef (Abstract) fmriDataPredictor
         function obj = compress(obj)
             return
         end
+        
+        % should implement this for switching from fast to slow expecution
+        % based on whether or not we're in a CV loop
+        %function obj = doFast(obj)
+        %    return
+        %end
     end
 end

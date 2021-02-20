@@ -64,6 +64,13 @@ classdef combatTransformer < fmriDataTransformer
             obj.fitTime = toc(t0);
         end
         
+        % Note: This function will behave differently when transforming a
+        % single batch (e.g. in a prediction application) vs. when
+        % transforming multiple batches. The reason being that it aims for
+        % a homogenous brain mask across all batch instances in dat. Some
+        % batches will have invalid voxels in some areas, which will
+        % consequently be removed from all batches for instance. There is
+        % room for further development here to fix this issue.
         function cb_dat = transform(obj, dat)
             assert(obj.isFitted,'Please call combatTransformer.fit() before combatTransformer.transform().');
             
