@@ -1,18 +1,20 @@
-% bayesOptClf Create a bayesOptimized predictor
+% bayesOptCV Create a bayesOptimized estimator
 %
-%   predictor = bayesOptPredictor(predictor, [cv], [scorer], bayesOptOpts)
+%   estimator = bayesOptCV(estimator, [cv], [scorer], bayesOptOpts)
 %
-%   predictor - a predictor with a get_params() and set_hyp() method
-%               get_params(), which must allow these kinds of operations,
-%               params = predictor.getParams()
-%               predictor = predictor.set_hyp(params{1}, newVal)
+%   estimator - an fmriDataEstimator with a get_params() and set_hyp()
+%               method, which must allow these kinds of operations,
+%               params = estimator.getParams()
+%               estimator = estimator.set_hyp(params{1}, newVal)
 %               string valued names returned by getParams() define valid
 %               values of the name field of bayesOpt optimizable variables
 %               subsequently passed to this class.
 %
 %   cv      - a function handle that takes an fmri_data object and target
 %               as input and returns a cvpartition object. Default is 
-%               cv = @(dat)cvpartition2(ones(length(dat.Y),1),'KFOLD', 5, 'Stratify', dat.metadata_table.subject_id)
+%               cv = @(dat)cvpartition(ones(length(dat.Y),1),'KFOLD', 5).
+%               Look into cvpartition2 if you have blocks of dependent data 
+%               (e.g. repeated measurements).
 %
 %   scorer  - a function handle that takes a yFit object as input and returns a
 %               scalar value loss estimate. Default is get_mse(). yFit
@@ -21,9 +23,9 @@
 %   bayesOptOpts - same arguments you would normally supply to bayesopt if
 %               invoked directly (see help bayesOpt for details). Note that
 %               any optimizableVariable object must have 'Name' set to a
-%               value matching those returned by predictor.get_params().
+%               value matching those returned by estimator.get_params().
 %
-%   bayesOptClf methods:
+%   bayesOptCV methods:
 %       fit     - run bayesopt to identify best hyperparameters
 %       predict - get prediction using optimally fit hyperparameters
 %       
@@ -33,23 +35,23 @@
 %   this_dat % an fmri_data_st object with dat.metadata_table.subject_id
 %            % indicating subject block membership
 %
-%   predictor = plsRegressor();
+%   estimator = plsRegressor();
 %
 %   dims = optimizableVariable('numcomponents',[1,30], 'Type', 'integer', 'Transform', 'log');
 %   bayesOptOpts = {dims, 'AcquisitionFunctionName', 'expected-improvement-plus', ...
 %    'MaxObjectiveEvaluations', 2, 'UseParallel' 0, 'verbose', 0};
 %
 %   cvpart = @(dat,Y)cvpartition2(ones(Y,1),'KFOLD', 5, 'Stratify', dat.metadata_table.subject_id);
-%   bo = bayesOptClf(predictor, cvpart, @get_mse, bayesOptOpts)
+%   bo = bayesOptCV(estimator, cvpart, @get_mse, bayesOptOpts)
 %
 %   bo = bo.fit(this_dat, this_dat.Y);
 %   yfit = bo.predict(new_dat)
 
-classdef bayesOptPredictor < fmriDataPredictor
+classdef bayesOptCV < fmriDataEstimator
     properties
         bayesOptOpts = [];
-        predictor = [];
-        cv = @(dat,Y)cvpartition2(ones(length(dat.Y),1),'KFOLD', 5, 'Stratify', dat.metadata_table.subject_id)
+        estimator = [];
+        cv = @(dat,Y)cvpartition(ones(length(dat.Y),1),'KFOLD', 5)
         scorer = @get_mse;
     end
     
@@ -58,22 +60,22 @@ classdef bayesOptPredictor < fmriDataPredictor
         fitTime = -1;
     end
     
-    properties (Access = ?fmriDataPredictor)
+    properties (Access = ?fmriDataEstimator)
         hyper_params = {};
     end
     
     methods
-        function obj = bayesOptPredictor(predictor, cv, scorer, bayesOptOpts)
-            obj.predictor = predictor;
+        function obj = bayesOptCV(estimator, cv, scorer, bayesOptOpts)
+            obj.estimator = estimator;
             if ~isempty(cv), obj.cv = cv; end
             if ~isempty(scorer), obj.scorer = scorer; end
             
-            params = predictor.get_params();
+            params = estimator.get_params();
             for i = 1:length(bayesOptOpts{1})
                 this_param = bayesOptOpts{1}(i);
                 
                 assert(ismember(this_param.Name, params),...
-                    sprintf('optimizableVariable names must match %s.get_params()\n', class(predictor)));
+                    sprintf('optimizableVariable names must match %s.get_params()\n', class(estimator)));
             end
             
             obj.bayesOptOpts = bayesOptOpts;
@@ -82,67 +84,62 @@ classdef bayesOptPredictor < fmriDataPredictor
         function obj = fit(obj, dat, Y)  
             t0 = tic;
             % obj = fit(obj, dat, Y) optimizes the hyperparameters of
-            % obj.predictor using data in fmri_data object dat and target vector
+            % obj.estimator using data in fmri_data object dat and target vector
             % Y.
             lossFcn = @(hyp)(obj.lossFcn(hyp, dat, Y));
             bayesOptObj = bayesopt(lossFcn, obj.bayesOptOpts{:});
             this_hyp = bayesOptObj.XAtMinEstimatedObjective;
             
-            params = obj.predictor.get_params();
+            params = obj.estimator.get_params();
             for i = 1:length(this_hyp.Properties.VariableNames)
                 hypname = this_hyp.Properties.VariableNames{i};       
                 assert(~isempty(ismember(params, hypname)), ...
-                    sprintf('%s is not a valid hyperparameter for %s', hypname, class(obj.predictor)));
+                    sprintf('%s is not a valid hyperparameter for %s', hypname, class(obj.estimator)));
                 
-                obj.predictor = obj.predictor.set_hyp(hypname, this_hyp.(hypname));
+                obj.estimator = obj.estimator.set_hyp(hypname, this_hyp.(hypname));
             end
             
-            obj.predictor = obj.predictor.fit(dat, Y);
+            obj.estimator = obj.estimator.fit(dat, Y);
             obj.fitTime = toc(t0);
         end
         
-        function yfit = predict(obj, dat)
+        function yfit = predict(obj, dat, varargin)
             % yfit = predict(obj, dat) makes a prediction using optimal
-            % hypermaraters of obj.predictor on fmri_data object dat.
-            yfit = obj.predictor.predict(dat);
+            % hypermaraters of obj.estimator on fmri_data object dat.
+            yfit = obj.estimator.predict(dat, varargin{:});
         end
         
         function obj = set_hyp(obj, varargin)
-            warning('bayesOptClf:get_params','This function has no hyperparameters to set. To set hyperparameters of obj.predictor call obj.fit() instead.');
+            warning('bayesOptCV:get_params','This function has no hyperparameters to set. To set hyperparameters of obj.estimator call obj.fit() instead.');
         end
         
         function params = get_params(varargin)
-            warning('bayesOptClf:get_params','This function should not be optimized. It is an optimizer.');
+            warning('bayesOptCV:get_params','This function should not be optimized. It is an optimizer.');
             params = {};
         end
         
         function loss = lossFcn(obj, this_hyp, dat, Y)
             % set hyperparameters
-            params = obj.predictor.get_params();
+            params = obj.estimator.get_params();
             for i = 1:length(this_hyp.Properties.VariableNames)
                 hypname = this_hyp.Properties.VariableNames{i};
                 assert(~isempty(ismember(params, hypname)), ...
                     sprintf('%s is not a valid hyperparameter for bayes optimization', hypname));
                 
-                obj.predictor = obj.predictor.set_hyp(hypname, this_hyp.(hypname));
+                obj.estimator = obj.estimator.set_hyp(hypname, this_hyp.(hypname));
             end
             
-            % what follows is valid if computing the score across folds and
-            % averaging gives the same result as computing the score for
-            % each fold individually and averaging those scores. It's valid
-            % for MSE for instance, but not r-value. We need to update this
-            % funtcion with a crossValScore function that we then average.
-            this_cv = crossValPredict(obj.predictor, obj.cv, 'repartOnFit', true, 'n_parallel', 1, 'verbose', false);
+            this_cv = crossValScore(obj.estimator, obj.cv, obj.scorer, 'repartOnFit', true, 'n_parallel', 1, 'verbose', false);
             
             % get associated loss
             this_cv = this_cv.do(dat, Y);
-            loss = obj.scorer(this_cv);
+            loss = mean(this_cv.scores); % might want to make this flexible (e.g. let user pick median or mode)
         end 
     end
     
-    methods (Access = {?crossValidator, ?fmriDataTransformer, ?fmriDataPredictor})
+    methods (Access = {?crossValidator, ?fmriDataTransformer, ?fmriDataEstimator})
         function obj = compress(obj)
-            obj.predictor = obj.predictor.compress();
+            obj.estimator = obj.estimator.compress();
         end
     end
 end

@@ -1,8 +1,8 @@
 % crossValPredict performs cross validated prediction
 %
-% cvPredictor = crossValPredict(predictor, cv, varargin)
+% cvPredictor = crossValPredict(estimator, cv, varargin)
 %
-% predictor   - an fmriDataPredictor object
+% estimator   - an fmriDataEstimator object
 %
 % cv    - a function handle to a method that takes an fmri_data and target
 %           value as input, cv(fmri_data, Y) and returns a cvpartition
@@ -22,21 +22,24 @@
 %
 % crossValPredict properties:
 %   cvpart  - cvpartition object used during last fit call
-%   predictor
+%   estimator
 %	    - classifier used in last fit call
 %   yfit    - most recent fitted values (cross validated)
 %   Y       - most recent observed values
 %   yfit_null - null predictions (cross validated)
-%   foldPredictor
-%           - predictor objects use for each fold in fit() call. Useful
+%   foldEstimator
+%           - estimator objects use for each fold in fit() call. Useful
 %               when hyperparameters differ across folds
 %
 % crossValPredict methods:
 %   do      - crossValPredict = cvPredictor.fit(fmri_data, Y) performs
 %               cross validated predictions using fmri_data to predict Y
 %   do_null - fits null model with cross validation
-%   set_cvpart - sets cvpart manually (useful for reusing cv folds of other
-%               training run from a different predictor/classifier)
+%   set_cvpart 
+%           - sets cvpart manually (useful for reusing cv folds of other
+%               training run from a different estimator)
+%   repartition
+%           - resets the cvpartition object.
 %
 
 classdef crossValPredict < crossValidator & yFit
@@ -44,16 +47,15 @@ classdef crossValPredict < crossValidator & yFit
         verbose = true;
     end
     
-    properties (SetAccess = private)
+    properties (SetAccess = ?crossValPredict)
         evalTime = -1;
-        %foldPredictor = {};
     end
     
     methods
-        function obj = crossValPredict(predictor, cv, varargin)
-            assert(isa(predictor,'fmriDataPredictor'), 'predictor must be type fmriDataPredictor');
+        function obj = crossValPredict(estimator, cv, varargin)
+            assert(isa(estimator,'fmriDataEstimator'), 'estimator must be type fmriDataEstimator');
             
-            obj.predictor = predictor;
+            obj.estimator = estimator;
             if ~isempty(cv), obj.cv = cv; end
             
             for i = 1:length(varargin)
@@ -80,14 +82,21 @@ classdef crossValPredict < crossValidator & yFit
                 end
             end
             
+            % reformat cvpartition and save as a vector of labels as a
+            % convenience
             obj.fold_lbls = zeros(length(Y),1);
             for i = 1:obj.cvpart.NumTestSets
                 obj.fold_lbls(obj.cvpart.test(i)) = i;
             end
             
+            % make estimator fast, which allows it to assume everyone is in
+            % the same space and use matrix multiplication instead of
+            % apply_mask
+            
+            % do coss validation. Dif invocations for parallel vs. serial
             obj.yfit = zeros(length(Y),1);
-            this_foldPredictor = cell(obj.cvpart.NumTestSets,1);
-            if obj.n_parallel == 1            
+            this_foldEstimator = cell(obj.cvpart.NumTestSets,1);
+            if obj.n_parallel <= 1            
                 for i = 1:obj.cvpart.NumTestSets
                     if obj.verbose, fprintf('Fold %d/%d\n', i, obj.cvpart.NumTestSets); end
 
@@ -96,8 +105,8 @@ classdef crossValPredict < crossValidator & yFit
 
                     test_dat = dat.get_wh_image(obj.cvpart.test(i));
 
-                    this_foldPredictor{i} = obj.predictor.fit(train_dat, train_Y);
-                    obj.yfit(obj.fold_lbls == i) = this_foldPredictor{i}.predict(test_dat);
+                    this_foldEstimator{i} = obj.estimator.fit(train_dat, train_Y);
+                    obj.yfit(obj.fold_lbls == i) = this_foldEstimator{i}.predict(test_dat, 'fast', true);
                 end
             else
                 if ~isempty(gcp('nocreate')), delete(gcp('nocreate')); end
@@ -109,13 +118,10 @@ classdef crossValPredict < crossValidator & yFit
 
                     test_dat = dat.get_wh_image(obj.cvpart.test(i));
 
-                    this_foldPredictor{i} = obj.predictor.fit(train_dat, train_Y);
+                    this_foldEstimator{i} = obj.estimator.fit(train_dat, train_Y);
                     % we can always make certain assumptions about the train and test space
-                    % matching when we do cross validation. We could incorporate that here
-                    % elegantly. We have to require fmriDataPredictor objects have a fast
-                    % property though.
-                    % this_foldPredictor{i} = this_foldPredictor{i}.fast = true;
-                    yfit{i} = this_foldPredictor{i}.predict(test_dat)';
+                    % matching which allows us to use the fast option
+                    yfit{i} = this_foldEstimator{i}.predict(test_dat, 'fast', true)';
                     
                     if obj.verbose, fprintf('Completed fold %d/%d\n', i, obj.cvpart.NumTestSets); end
                 end
@@ -124,7 +130,7 @@ classdef crossValPredict < crossValidator & yFit
                 end
             end
             
-            obj.foldPredictor = this_foldPredictor;
+            obj.foldEstimator = this_foldEstimator;
             obj.Y = Y;
             obj.evalTime = toc(t0);
             obj.is_done = true;
@@ -166,12 +172,6 @@ classdef crossValPredict < crossValidator & yFit
         
         function obj = repartition(obj)
             obj.cvpart = obj.cvpart.repartition;
-        end
-        
-        function obj = compress(obj)
-            for i = 1:length(obj.foldPredictor)
-                obj.foldPredictor{i} = obj.foldPredictor{i}.compress();
-            end
         end
     end
 end

@@ -1,5 +1,7 @@
-% similar to combatTransformer except it stores reference bach mean and
-% variance instead of entire reference batch
+% implements reference batch ComBat harmonization. ComBat parameter estimation
+% is sensitive to certain types of data charactreistics. sani_for_combat is used
+% to modify the data before combat is used. Please refer to that function in
+% utils for details
 classdef combatTransformer < fmriDataTransformer
     properties
         combat_opts = {[], 1};
@@ -128,12 +130,6 @@ classdef combatTransformer < fmriDataTransformer
                 assert(ismember(hyp_val,[0,1]), 'parametric flag must be 0/1')
                 obj.combat_opts{2} = hyp_val;
             end
-        end
-    end
-    
-    methods (Access = {?crossValidator, ?fmriDataPredictor, ?fmriDataTransformer})
-        function obj = compress(obj)
-            obj.ref_params = [];
         end
     end
         
