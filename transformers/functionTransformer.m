@@ -1,6 +1,7 @@
-% applies an arbitrary function to the data. Function must take fmri_data
-% object as input.
-classdef functionTransformer < fmriDataTransformer
+% applies an arbitrary function to the data.
+%
+% useful for converting arbitrary canlabCore functions into transformer objects
+classdef functionTransformer < Transformer
     properties (SetAccess = private)
         funhan = @(x1)(x1); % default to identity function
         
@@ -8,7 +9,7 @@ classdef functionTransformer < fmriDataTransformer
         fitTime = 0;
     end
     
-    properties (Access = ?fmriDataTransformer)
+    properties (Access = ?Transformer)
         hyper_params = {};
     end
     
@@ -23,10 +24,10 @@ classdef functionTransformer < fmriDataTransformer
             obj.fitTime = toc(t0);
         end
         
-        function dat = transform(obj, dat)
+        function X = transform(obj, X)
             assert(obj.isFitted,'Please call functionTransformer.fit() before functionTransformer.transform().');
             
-            dat = obj.funhan(dat);
+            X = obj.funhan(X);
         end
     end
 end

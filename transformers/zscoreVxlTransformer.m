@@ -1,13 +1,13 @@
 % zscores each batch so that within-batch all voxels have mean zero and
 % variance 1.
-classdef zscoreVxlTransformer < fmriDataTransformer
+classdef zscoreVxlTransformer < Transformer
     properties (SetAccess = private)
         get_batch_id = @(X)(X.metadata_table.subject_id);
         
         isFitted = true;
         fitTime = 0;
     end
-    properties (Access = ?fmriDataTransformer)
+    properties (Access = ?Transformer)
        	hyper_params = {};
     end
     

@@ -1,4 +1,4 @@
-classdef pipeline < Estimator & fmriDataTransformer
+classdef pipeline < Estimator & Transformer
     properties 
         verbose = false;
     end
@@ -15,14 +15,14 @@ classdef pipeline < Estimator & fmriDataTransformer
         fitTime = -1
     end
     
-    properties (Access = {?fmriDataTransformer, ?Estimator})
+    properties (Access = {?Transformer, ?Estimator})
         hyper_params = {};
     end
     
     methods
         function obj = pipeline(steps, varargin)
             for i = 1:length(steps) - 1
-                assert(isa(steps{i}{2}, 'fmriDataTransformer'), 'All but last step must be transformers');
+                assert(isa(steps{i}{2}, 'Transformer'), 'All but last step must be transformers');
                 
                 obj.transformer_names{end+1} = steps{i}{1};
                 obj.transformers{end+1} = steps{i}{2};
@@ -30,7 +30,7 @@ classdef pipeline < Estimator & fmriDataTransformer
             if isa(steps{end}{2},'Estimator')
                 obj.estimator_name = steps{end}{1};
                 obj.estimator = steps{end}{2};
-            elseif isa(steps{end}{2},'fmriDataTransformer')
+            elseif isa(steps{end}{2},'Transformer')
                 obj.transformer_names{end+1} = steps{end}{1};
                 obj.transformers{end+1} = steps{end}{2};
             else
@@ -138,7 +138,7 @@ classdef pipeline < Estimator & fmriDataTransformer
             obj.transformer_names = {};
             
             for i = 1:length(transformers)
-                assert(isa(transformers{i}{2}, 'fmriDataTransformer'), 'All steps must be fmriDataTransformer');
+                assert(isa(transformers{i}{2}, 'Transformer'), 'All steps must be transformers');
                 
                 obj.transformer_names{end+1} = transformers{i}{1};
                 obj.transformers{end+1} = transformers{i}{2};
@@ -148,7 +148,7 @@ classdef pipeline < Estimator & fmriDataTransformer
         end
         
         function obj = set_estimator(obj,estimator)       
-            assert(isa(estimator{2}, 'fmriDataEstimator'), 'Estimator must be fmriDataEstimator');
+            assert(isa(estimator{2}, 'Estimator'), 'estimator must be type Estimator');
 
             obj.estimator_name = estmator{1};
             obj.estimator = estimator{2};

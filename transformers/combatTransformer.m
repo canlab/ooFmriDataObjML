@@ -2,7 +2,7 @@
 % is sensitive to certain types of data charactreistics. sani_for_combat is used
 % to modify the data before combat is used. Please refer to that function in
 % utils for details
-classdef combatTransformer < fmriDataTransformer
+classdef combatTransformer < Transformer
     properties
         combat_opts = {[], 1};
     end
@@ -18,7 +18,7 @@ classdef combatTransformer < fmriDataTransformer
         fitTime = -1;
     end
     
-    properties (Access = ?fmriDataTransformer)
+    properties (Access = ?Transformer)
         hyper_params = {'parametric'};
     end
     

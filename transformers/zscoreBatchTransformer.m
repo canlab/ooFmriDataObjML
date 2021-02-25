@@ -1,13 +1,13 @@
 % zscores each batch so that within-batch the mean value is zero and
 % variance is 1
-classdef zscoreBatchTransformer < fmriDataTransformer
+classdef zscoreBatchTransformer < Transformer
     properties (SetAccess = private)
         get_batch_id = @(X)(X.metadata_table.subject_id);
         
         isFitted = true;
         fitTime = 0;
     end
-    properties (Access = ?fmriDataTransformer)
+    properties (Access = ?Transformer)
         hyper_params = {};
     end
     
@@ -23,7 +23,7 @@ classdef zscoreBatchTransformer < fmriDataTransformer
         end
         
         function dat = transform(obj, dat)
-            assert(obj.isFitted,'Please call zscoreVxlTransformer.fit() before zscoreVxlTransformer.transform().');
+            assert(obj.isFitted, sprintf('Please call %s.fit() before %s.transform().', class(obj), class(obj)));
             
             [~,~,batch_id] = unique(obj.get_batch_id(dat),'stable');
             
