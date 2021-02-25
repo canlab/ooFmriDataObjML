@@ -53,7 +53,7 @@ classdef crossValPredict < crossValidator & yFit
     
     methods
         function obj = crossValPredict(estimator, cv, varargin)
-            assert(isa(estimator,'fmriDataEstimator'), 'estimator must be type fmriDataEstimator');
+            assert(isa(estimator,'Estimator'), 'estimator must be type Estimator');
             
             obj.estimator = estimator;
             if ~isempty(cv), obj.cv = cv; end
@@ -100,10 +100,14 @@ classdef crossValPredict < crossValidator & yFit
                 for i = 1:obj.cvpart.NumTestSets
                     if obj.verbose, fprintf('Fold %d/%d\n', i, obj.cvpart.NumTestSets); end
 
-                    train_dat = dat.get_wh_image(~obj.cvpart.test(i));
                     train_Y = Y(~obj.cvpart.test(i));
-
-                    test_dat = dat.get_wh_image(obj.cvpart.test(i));
+                    if isa(dat,'image_vector')
+                        train_dat = dat.get_wh_image(~obj.cvpart.test(i));
+                        test_dat = dat.get_wh_image(obj.cvpart.test(i));
+                    else
+                        train_dat = dat(~obj.cvpart.test(i),:);
+                        test_dat = dat(obj.cvpart.test(i),:);
+                    end
 
                     this_foldEstimator{i} = obj.estimator.fit(train_dat, train_Y);
                     obj.yfit(obj.fold_lbls == i) = this_foldEstimator{i}.predict(test_dat, 'fast', true);
@@ -113,10 +117,15 @@ classdef crossValPredict < crossValidator & yFit
                 parpool(obj.n_parallel);
                 yfit = cell(obj.cvpart.NumTestSets,1);
                 parfor i = 1:obj.cvpart.NumTestSets
-                    train_dat = dat.get_wh_image(~obj.cvpart.test(i));
+                    
                     train_Y = Y(~obj.cvpart.test(i));
-
-                    test_dat = dat.get_wh_image(obj.cvpart.test(i));
+                    if isa(dat,'image_vector')
+                        train_dat = dat.get_wh_image(~obj.cvpart.test(i));
+                        test_dat = dat.get_wh_image(obj.cvpart.test(i));
+                    else
+                        train_dat = dat(~obj.cvpart.test(i),:);
+                        test_dat = dat(obj.cvpart.test(i),:);
+                    end
 
                     this_foldEstimator{i} = obj.estimator.fit(train_dat, train_Y);
                     % we can always make certain assumptions about the train and test space
@@ -172,6 +181,13 @@ classdef crossValPredict < crossValidator & yFit
         
         function obj = repartition(obj)
             obj.cvpart = obj.cvpart.repartition;
+        end
+        
+        function plot(obj, varargin)
+            plot(obj.Y, obj.yfit, '.', varargin{:});
+            xlabel('Observed')
+            ylabel(sprintf('Predicted (%d-fold CV)',obj.cvpart.NumTestSets))
+            lsline;
         end
     end
 end

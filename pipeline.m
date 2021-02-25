@@ -1,4 +1,4 @@
-classdef pipeline < fmriDataEstimator & fmriDataTransformer
+classdef pipeline < Estimator & fmriDataTransformer
     properties 
         verbose = false;
     end
@@ -15,7 +15,7 @@ classdef pipeline < fmriDataEstimator & fmriDataTransformer
         fitTime = -1
     end
     
-    properties (Access = {?fmriDataTransformer, ?fmriDataEstimator})
+    properties (Access = {?fmriDataTransformer, ?Estimator})
         hyper_params = {};
     end
     
@@ -27,7 +27,7 @@ classdef pipeline < fmriDataEstimator & fmriDataTransformer
                 obj.transformer_names{end+1} = steps{i}{1};
                 obj.transformers{end+1} = steps{i}{2};
             end
-            if isa(steps{end}{2},'fmriDataEstimator')
+            if isa(steps{end}{2},'Estimator')
                 obj.estimator_name = steps{end}{1};
                 obj.estimator = steps{end}{2};
             elseif isa(steps{end}{2},'fmriDataTransformer')

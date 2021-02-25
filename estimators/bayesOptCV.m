@@ -2,17 +2,18 @@
 %
 %   estimator = bayesOptCV(estimator, [cv], [scorer], bayesOptOpts)
 %
-%   estimator - an fmriDataEstimator with a get_params() and set_hyp()
-%               method, which must allow these kinds of operations,
+%   estimator - an Estimatorm must allow these kinds of operations,
 %               params = estimator.getParams()
 %               estimator = estimator.set_hyp(params{1}, newVal)
+%               estimator = estimator.fit(X,Y)
+%               yfit = estimator.predict(X)
 %               string valued names returned by getParams() define valid
 %               values of the name field of bayesOpt optimizable variables
 %               subsequently passed to this class.
 %
-%   cv      - a function handle that takes an fmri_data object and target
-%               as input and returns a cvpartition object. Default is 
-%               cv = @(dat)cvpartition(ones(length(dat.Y),1),'KFOLD', 5).
+%   cv        - a function handle that takes an (X,Y) pair as input and
+%               returns a cvpartition object. Default is 
+%               cv = @(X,Y)cvpartition(ones(length(Y),1),'KFOLD', 5).
 %               Look into cvpartition2 if you have blocks of dependent data 
 %               (e.g. repeated measurements).
 %
@@ -47,11 +48,11 @@
 %   bo = bo.fit(this_dat, this_dat.Y);
 %   yfit = bo.predict(new_dat)
 
-classdef bayesOptCV < fmriDataEstimator
+classdef bayesOptCV < Estimator
     properties
         bayesOptOpts = [];
         estimator = [];
-        cv = @(dat,Y)cvpartition(ones(length(dat.Y),1),'KFOLD', 5)
+        cv = @(X,Y)cvpartition(ones(length(Y),1),'KFOLD', 5)
         scorer = @get_mse;
     end
     
@@ -60,7 +61,7 @@ classdef bayesOptCV < fmriDataEstimator
         fitTime = -1;
     end
     
-    properties (Access = ?fmriDataEstimator)
+    properties (Access = ?Estimator)
         hyper_params = {};
     end
     
@@ -81,7 +82,7 @@ classdef bayesOptCV < fmriDataEstimator
             obj.bayesOptOpts = bayesOptOpts;
         end
         
-        function obj = fit(obj, dat, Y)  
+        function obj = fit(obj, dat, Y, varargin)  
             t0 = tic;
             % obj = fit(obj, dat, Y) optimizes the hyperparameters of
             % obj.estimator using data in fmri_data object dat and target vector
@@ -99,7 +100,7 @@ classdef bayesOptCV < fmriDataEstimator
                 obj.estimator = obj.estimator.set_hyp(hypname, this_hyp.(hypname));
             end
             
-            obj.estimator = obj.estimator.fit(dat, Y);
+            obj.estimator = obj.estimator.fit(dat, Y, varargin{:});
             obj.fitTime = toc(t0);
         end
         
@@ -117,7 +118,7 @@ classdef bayesOptCV < fmriDataEstimator
             warning('bayesOptCV:get_params','This function should not be optimized. It is an optimizer.');
             params = {};
         end
-        
+    
         function loss = lossFcn(obj, this_hyp, dat, Y)
             % set hyperparameters
             params = obj.estimator.get_params();
@@ -135,11 +136,5 @@ classdef bayesOptCV < fmriDataEstimator
             this_cv = this_cv.do(dat, Y);
             loss = mean(this_cv.scores); % might want to make this flexible (e.g. let user pick median or mode)
         end 
-    end
-    
-    methods (Access = {?crossValidator, ?fmriDataTransformer, ?fmriDataEstimator})
-        function obj = compress(obj)
-            obj.estimator = obj.estimator.compress();
-        end
     end
 end
