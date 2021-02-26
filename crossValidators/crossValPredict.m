@@ -75,11 +75,7 @@ classdef crossValPredict < crossValidator & yFit
         function obj = do(obj, dat, Y)
             t0 = tic;
             if obj.repartOnFit || isempty(obj.cvpart)
-                try
-                    obj.cvpart = obj.cv(dat, Y);
-                catch
-                    keyboard
-                end
+                obj.cvpart = obj.cv(dat, Y);
             end
             
             % reformat cvpartition and save as a vector of labels as a
@@ -183,8 +179,8 @@ classdef crossValPredict < crossValidator & yFit
             obj.cvpart = obj.cvpart.repartition;
         end
         
-        function plot(obj, varargin)
-            plot(obj.Y, obj.yfit, '.', varargin{:});
+        function varargin = plot(obj, varargin)
+            vararginout = plot(obj.Y, obj.yfit, '.', varargin{:});
             xlabel('Observed')
             ylabel(sprintf('Predicted (%d-fold CV)',obj.cvpart.NumTestSets))
             lsline;

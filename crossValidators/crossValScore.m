@@ -84,33 +84,14 @@ classdef crossValScore < crossValPredict
         end
         
         function obj = do(obj, dat, Y)
-            % get cross validated fits
-            %
-            % careful with this logic. The warning below is important
-            % to notify users of unexpected behavior, which may occur due
-            % to complex inheritance and nesting.
-            if ~obj.is_done || obj.repartOnFit
-                t0 = tic;
-                obj = do@crossValPredict(obj, dat, Y);
-                obj.evalTime = -1;
-                obj.evalTimeFits = toc(t0);
-            else
-                warning('Using old cross validated fits. If this is unintended invoke obj.repartition() or obj.set_cvpart(cvpartition) for a prespecified partitioning.');
-            end
+            t0 = tic;
+            obj = do@crossValPredict(obj, dat, Y);
+            obj.evalTime = -1;
+            obj.evalTimeFits = toc(t0);
+            
+            obj = obj.eval_score();
             
             % evaluate scores for each fold separately
-            t0 = tic;
-            k = unique(obj.cvpart.NumTestSets);
-            obj.scores = zeros(k,1);
-            for i = 1:k
-                fold_yfit = obj.yfit(obj.cvpart.test(i));
-                fold_Y = obj.Y(obj.cvpart.test(i));
-                
-                yfit = manual_yFit(fold_Y, fold_yfit);
-                
-                obj.scores(i) = obj.scorer(yfit);
-            end
-            obj.evalTimeScorer = toc(t0);
             obj.evalTime = obj.evalTimeScorer + obj.evalTimeFits;
         end
         
@@ -137,10 +118,36 @@ classdef crossValScore < crossValPredict
            obj.scores_null = [];
         end
         
+        function obj = eval_score(obj)
+            assert(obj.is_done, 'Please run obj.do first');
+            
+            t0 = tic;
+            k = unique(obj.cvpart.NumTestSets);
+            obj.scores = zeros(k,1);
+            for i = 1:k
+                fold_yfit = obj.yfit(obj.cvpart.test(i));
+                fold_Y = obj.Y(obj.cvpart.test(i));
+                
+                yfit = manual_yFit(fold_Y, fold_yfit);
+                
+                obj.scores(i) = obj.scorer(yfit);
+            end
+            obj.evalTimeScorer = toc(t0);
+        end
+        
         function obj = set_scorer(obj, scorer)
            obj.scorer = scorer;
            obj.evalTime = -1;
            obj.evalTimeScorer = -1;
+        end
+        
+        function varargout = plot(obj, varargin)
+            varargout = plot@crossValPredict(obj, varargin{:});
+            this_title = sprintf('Mean score = %0.3f', mean(obj.scores));
+            if ~isempty(obj.scores_null)
+                this_title = {this_title, sprintf('Mean null score = %0.3f', mean(obj.scores_null))};
+            end
+            title(this_title);
         end
     end
 end

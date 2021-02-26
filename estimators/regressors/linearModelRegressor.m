@@ -5,7 +5,7 @@
 classdef (Abstract) linearModelRegressor < linearModelEstimator
     methods
         function yfit = predict(obj, X, varargin)            
-            yfit = obj.B(:)'*X + obj.offset;
+            yfit = X*obj.B(:) + obj.offset;
             
             yfit = yfit(:);
         end
