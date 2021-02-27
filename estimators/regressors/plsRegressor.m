@@ -3,9 +3,7 @@ classdef plsRegressor < linearModelRegressor
         numcomponents = 1;
     end
     
-    properties (SetAccess = private)
-        algorithm_type = 'regressor';    
-                
+    properties (SetAccess = private)                
         isFitted = false;
         fitTime = -1;
     end
