@@ -16,14 +16,31 @@
 %                       the constructor was invoked. Any additional 
 %                       arguments are passed through to the modelEstimator.
 %
-%       yfit = predict(obj, dat, ['fast', true/false])
-%                   - Use modelEstimator to predict outcome in dat. If
-%                       'fast', is set to true the fmriDataEstimator
-%                       assumes that dat.dat is already appropriately
-%                       vectorized to be passed through directly to
-%                       modelEstimator. Otherwise dat is transformed to
-%                       match brainModel before application of
-%                       modelEstimator.
+%       yfit = predict(obj, dat, [options])
+%                   - Use modelEstimator to predict outcome in dat. 
+%           options::
+%               'fast' - true/false. If true fmriDataEstimator assumes that 
+%                       dat.dat is already appropriately vectorized to be 
+%                       passed through directly to modelEstimator. 
+%                       Otherwise dat is transformed to match brainModel 
+%                       before application of modelEstimator.
+%               'featureConstructor_funhan'
+%                       - Some models need metadata in addition to brain
+%                       data (e.g. multilevelGlmRegressor needs some kind
+%                       of identifier for random effects blocks like a
+%                       subject indicator). features objects provide a way 
+%                       of attaching this kind of metadata to matrix data,
+%                       and this argument provides a way for the user to
+%                       specify a function handle with instructions on how
+%                       to construct this feature object. For instance if
+%                       the necessary data is in
+%                       fmri_data.metadata_table.subject_id then a sensible
+%                       featureConstructor might be specified using an
+%                       annonymous function like so,
+%                       @(x1)(features(x1.dat', x1.metadata_table.subject_id)
+%                       Note that x1.dat is transposed because model's
+%                       expect input data to be obs x feature, while
+%                       fmri_data objects are vxl x obs.
 %
 %       weights = get_weights(obj)
 %                   - combines brainModel with modelEstimator weights and
@@ -53,6 +70,7 @@
 classdef fmriDataEstimator < Estimator
     properties (SetAccess = private)
         model = @plsRegressor
+        featureConstructor = @(X)(features(X.dat'));
                 
         brainModel = fmri_data();
         
@@ -65,8 +83,17 @@ classdef fmriDataEstimator < Estimator
     end
     
     methods   
-        function obj = fmriDataEstimator(model)
+        function obj = fmriDataEstimator(model, varargin)
             assert(isa(model,'modelEstimator'), 'Only modelEstimators are suppoted.')
+            
+            for i = 1:length(varargin)
+                if ischar(varargin{i})
+                    switch varargin{i}
+                        case 'featureConstructor_funhan'
+                            obj.featureConstructor = varargin{i+1};
+                    end
+                end
+            end
             
             obj.model = model;
         end
@@ -93,7 +120,8 @@ classdef fmriDataEstimator < Estimator
             obj.brainModel.history = {[class(obj), ' fit']};
             
             % this is where the MVPA model is actually fit
-            obj.model = obj.model.fit(dat.dat', Y, varargin{:});            
+            X = obj.featureConstructor(dat);
+            obj.model = obj.model.fit(X, Y, varargin{:});            
             
             obj.isFitted = true;
             
@@ -119,7 +147,8 @@ classdef fmriDataEstimator < Estimator
             %   on novel data.
             assert(obj.isFitted, sprintf('Please call %s.fit() before %s.predict().\n',class(obj)));
             if fast
-                yfit = obj.model.predict(dat.dat);
+                X = obj.featureConstructor(dat);
+                yfit = obj.model.predict(X);
             else
                 if isa(obj.model, 'linearModelEstimator')
                     assert(isa(obj.model, 'linearModelRegressor'), ...
