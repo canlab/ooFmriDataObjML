@@ -42,36 +42,8 @@
 %           - resets the cvpartition object.
 %
 
-classdef crossValPredict < crossValidator & yFit
-    properties
-        verbose = true;
-    end
-    
-    properties (SetAccess = ?crossValPredict)
-        evalTime = -1;
-    end
-    
-    methods
-        function obj = crossValPredict(estimator, cv, varargin)
-            assert(isa(estimator,'Estimator'), 'estimator must be type Estimator');
-            
-            obj.estimator = estimator;
-            if ~isempty(cv), obj.cv = cv; end
-            
-            for i = 1:length(varargin)
-                if ischar(varargin{i})
-                    switch varargin{i}
-                        case 'repartOnFit'
-                            obj.repartOnFit = varargin{i+1};
-                        case 'n_parallel'
-                            obj.n_parallel = varargin{i+1};
-                        case 'verbose'
-                            obj.verbose = varargin{i+1};
-                    end
-                end
-            end
-        end
-        
+classdef crossValPredict < crossValidator & yFit   
+    methods        
         function obj = do(obj, dat, Y)
             t0 = tic;
             if obj.repartOnFit || isempty(obj.cvpart)
@@ -162,7 +134,8 @@ classdef crossValPredict < crossValidator & yFit
             
             for i = 1:obj.cvpart.NumTestSets                
                 train_Y = Y(~obj.cvpart.test(i));
-                obj.yfit_null(obj.cvpart.test(i)) = mean(train_Y);
+                obj.yfit_null(obj.cvpart.test(i)) = ...
+                    obj.foldEstimator{i}.predict_null()*ones(sum(obj.cvpart.test(i)),1);
             end
         end
         
@@ -179,8 +152,8 @@ classdef crossValPredict < crossValidator & yFit
             obj.cvpart = obj.cvpart.repartition;
         end
         
-        function varargin = plot(obj, varargin)
-            vararginout = plot(obj.Y, obj.yfit, '.', varargin{:});
+        function varargout = plot(obj, varargin)
+            varargout{:} = plot(obj.Y, obj.yfit, '.', varargin{:});
             xlabel('Observed')
             ylabel(sprintf('Predicted (%d-fold CV)',obj.cvpart.NumTestSets))
             lsline;

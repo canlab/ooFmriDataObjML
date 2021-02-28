@@ -1,4 +1,4 @@
-classdef plsRegressor < linearModelRegressor
+classdef plsRegressor < linearModelEstimator & modelRegressor
     properties
         numcomponents = 1;
     end

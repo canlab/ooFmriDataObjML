@@ -9,7 +9,7 @@
 %
 %   'intercept' - true/false. Include intercept in univariate model. 
 %                   Default: true;
- classdef uniRegressor < linearModelRegressor
+classdef uniRegressor < linearModelEstimator & modelRegressor
    properties
         numcomponents = 1;
     end

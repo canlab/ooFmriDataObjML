@@ -38,7 +38,7 @@
 %                       is here but untested, so it's been disabled in the
 %                       constructor (see commented code).
 %  
- classdef multilevelGlmRegressor < linearModelRegressor
+classdef multilevelGlmRegressor < linearModelEstimator & modelRegressor
    properties
         numcomponents = 1;
     end

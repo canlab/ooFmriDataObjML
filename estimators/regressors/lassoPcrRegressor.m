@@ -115,7 +115,7 @@
 %     cvPredictor = cvPredictor.do_null;
 %     f = figure(2);
 %     cvPredictor.plot('Parent',gca(f));
-classdef lassoPcrRegressor < linearModelRegressor
+classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
     properties
         numcomponents = [];      
     end

@@ -1,11 +1,12 @@
-% obj = fmriDataEstimator(modelEstimator)
+% obj = fmriDataEstimator(Estimator)
 % In most cases fmriDataEstimators will serve as the primary vehical for
 % Estimator implementation in this library. Exceptions are noted at the end
 % of this help doc.
 %   
 %   properties (read only):
-%       model       - modelEstimator representing underlying MVPA model,
-%                       independent of any brain space parameterization
+%       model       - modelEstimator or modelEstimator
+%			representing underlying MVPA model, independent
+%                       of any brain space parameterization
 %       brainModel  - an fmri_data object that represents the model's 
 %                       corresponding brain space.
 %
@@ -55,7 +56,7 @@
 %                   - sets hyperparameter value of hyp_name to hyp_val for
 %                       modelEstimator.
 % 
-% We implement ML algoithms as linearModelEstimators which expect
+% We implement ML algoithms as modelEstimators which expect
 % vectorized input, but fmri_data is not vectorized in a predictable way. 
 % fmri_data objects can differ in resolution and spatial extent for 
 % instance. fmriDataEstimators serve as wrappers that mediate between 
@@ -84,7 +85,8 @@ classdef fmriDataEstimator < Estimator
     
     methods   
         function obj = fmriDataEstimator(model, varargin)
-            assert(isa(model,'modelEstimator'), 'Only modelEstimators are suppoted.')
+            assert(isa(model,'modelEstimator'),...
+                'Only modelEstimators are suppoted.')
             
             for i = 1:length(varargin)
                 if ischar(varargin{i})
@@ -99,8 +101,8 @@ classdef fmriDataEstimator < Estimator
         end
         
         function obj = fit(obj, dat, Y, varargin)
-            if ~isa(obj.model, 'linearModelRegressor')
-                warning(['Only linearModelRegressor objects are fully supported models at this time.', ...
+            if ~isa(obj.model, 'modelRegressor') || ~isa(obj.model, 'linearModelEstimator')
+                warning(['Only (linearModelEstimator & modelRegressor) objects are fully supported models at this time.', ...
                     'You will need to call %s.predict() with the ''fast'' option to obtain ',...
                     'predictions with unsupported model objects.'], obj(class));
             end
@@ -128,6 +130,44 @@ classdef fmriDataEstimator < Estimator
             obj.fitTime = toc(t0);
         end
         
+        % similar to predict but calls obj.model.score_samples()
+        function yfit_raw = score_samples(obj, dat, varargin)
+            fast = false;
+            for i = 1:length(varargin)
+                if ischar(varargin{i})
+                    switch varargin{i}
+                        case 'fast'
+                            fast = varargin{i+1};
+                    end
+                end
+            end
+                            
+            % we have a fast option and a slow option.
+            % fast option - will work if dat is in the same space as
+            %   obj.brainModel(). Good for faster cross validation.
+            % slow option - will transform dat to be in obj.brainModel()'s
+            %   space, so more robust, but slower. Good for testing models
+            %   on novel data.
+            assert(obj.isFitted, sprintf('Please call %s.fit() before %s.predict().\n',class(obj)));
+            if fast
+                X = obj.featureConstructor(dat);
+                yfit_raw = obj.model.score_samples(X);
+            else
+                if isa(obj.model, 'linearModelEstimator')
+                    assert(isa(obj.model, 'modelRegressor'), ...
+                        'Only modelRegressor linearModelEstimators are currently supported. You can try using predict() with the ''fast'' option but no guarantees of correct behavior.');
+                    
+                    weights = obj.get_weights();
+                    yfit_raw = apply_mask(dat, weights, 'pattern_expression', 'dotproduct', 'none') + ...
+                        obj.model.offset;
+                else
+                    error('Only linearModelEstimators are currently supported');
+                end
+            end
+            yfit_raw = yfit_raw(:);
+        end
+                
+        % similar to score_samples but calls obj.model.predict()
         function yfit = predict(obj, dat, varargin)
             fast = false;
             for i = 1:length(varargin)
@@ -151,8 +191,8 @@ classdef fmriDataEstimator < Estimator
                 yfit = obj.model.predict(X);
             else
                 if isa(obj.model, 'linearModelEstimator')
-                    assert(isa(obj.model, 'linearModelRegressor'), ...
-                        'Only linearModelRegressors are currently supported. You can try using predict() with the ''fast'' option but no guarantees of correct behavior.');
+                    assert(isa(obj.model, 'modelRegressor'), ...
+                        'Only modelRegressor linearModelEstimators are currently supported. You can try using predict() with the ''fast'' option but no guarantees of correct behavior.');
                     
                     weights = obj.get_weights();
                     yfit = apply_mask(dat, weights, 'pattern_expression', 'dotproduct', 'none') + ...
@@ -162,6 +202,19 @@ classdef fmriDataEstimator < Estimator
                 end
             end
             yfit = yfit(:);
+        end
+        
+        
+        function yfit_null = score_null(obj, varargin)                        
+            yfit_null = obj.model.predict_null(varargin{:});
+            
+            yfit_null = yfit_null(:);
+        end
+        
+        function yfit_null = predict_null(obj, varargin)                        
+            yfit_null = obj.model.score_null(varargin{:});
+            
+            yfit_null = yfit_null(:);
         end
         
         % fmriDataEstimator's would take no hyperparameters, and simply

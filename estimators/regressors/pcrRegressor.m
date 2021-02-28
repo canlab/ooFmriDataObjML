@@ -1,4 +1,4 @@
-classdef pcrRegressor < linearModelRegressor
+classdef pcrRegressor < linearModelEstimator & modelRegressor
     properties
         numcomponents = [];
     end

@@ -5,8 +5,21 @@ classdef (Abstract) Estimator
     
     methods (Abstract) 
         fit(obj, X, Y)
+        
+        % score_samples and predict are going to be the same for regression
+        % (most likely, haven't thought this through fully) but for
+        % classification they differ. Predict should return class labels,
+        % score_samples should return continuous values, distance from
+        % hyperplane, posterior probabilities, etc. score_samples will
+        % usually be used for optimization (e.g. hinge loss)
+        score_samples(obj, X)
         predict(obj, X)
-              
+        
+        % returns a null prediction. For regressors this is just the mean
+        % outcome value. For classifiers it may be more complicated.
+        predict_null(obj)
+        score_null(obj)
+
         get_params(obj)
         set_hyp(obj, hyp_name, hyp_val)
     end

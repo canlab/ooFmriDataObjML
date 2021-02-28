@@ -104,10 +104,20 @@ classdef bayesOptCV < Estimator
             obj.fitTime = toc(t0);
         end
         
-        function yfit = predict(obj, dat, varargin)
-            % yfit = predict(obj, dat) makes a prediction using optimal
-            % hypermaraters of obj.estimator on fmri_data object dat.
-            yfit = obj.estimator.predict(dat, varargin{:});
+        function yfit_raw = score_samples(obj, dat, varargin)
+            yfit_raw = obj.estimator.score_samples(dat, varargin{:});
+        end
+        
+        function yfit_null = score_null(obj, varargin)
+            yfit_null = obj.estimator.predict_null(varargin{:});
+        end
+        
+        function yfit = predict(obj, varargin)
+            yfit = obj.estimator.predict(varargin{:});
+        end
+        
+        function yfit_null = predict_null(obj, varargin)
+            yfit_null = obj.estimator.predict_null(varargin{:});
         end
         
         function obj = set_hyp(obj, varargin)

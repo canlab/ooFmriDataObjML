@@ -6,7 +6,7 @@
 %
 %   'intercept' - true/false. Include fixed effect intercept in GLM model. 
 %                   Default: true;
- classdef olsRegressor < linearModelRegressor
+classdef olsRegressor < linearModelEstimator & modelRegressor
    properties
         numcomponents = 1;
     end

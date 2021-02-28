@@ -93,6 +93,18 @@ classdef pipeline < Estimator & Transformer
         end
         
         % apply all transforms and predict
+        function yfit_raw = score_samples(obj, dat, varargin)
+            assert(~isempty(obj.estimator), ...
+                'This pipeline does not terminate in a estimator. Try pipeline.transform() instead');
+            
+            dat = obj.transform(dat);
+            if ~isempty(obj.estimator)
+                fprintf('Applying %s\n', obj.estimator_name);
+                yfit_raw = obj.estimator.score_samples(dat, varargin{:});
+            end
+        end
+        
+        % apply all transforms and predict
         function yfit = predict(obj, dat, varargin)
             assert(~isempty(obj.estimator), ...
                 'This pipeline does not terminate in a estimator. Try pipeline.transform() instead');
@@ -102,7 +114,25 @@ classdef pipeline < Estimator & Transformer
                 fprintf('Applying %s\n', obj.estimator_name);
                 yfit = obj.estimator.predict(dat, varargin{:});
             end
-        end
+        end    
+        
+        
+        % apply all transforms and predict
+        function yfit_null = score_null(obj, varargin)
+            assert(~isempty(obj.estimator), ...
+                'This pipeline does not terminate in a estimator. Try pipeline.transform() instead');
+            
+            yfit_null = obj.estimator.score_null(varargin{:});
+        end    
+        
+        % apply all transforms and predict
+        function yfit_null = predict_null(obj, varargin)
+            assert(~isempty(obj.estimator), ...
+                'This pipeline does not terminate in a estimator. Try pipeline.transform() instead');
+            
+            yfit_null = obj.estimator.predict_null(varargin{:});
+        end    
+        
         
         function params = get_params(obj)
             params = obj.hyper_params;
