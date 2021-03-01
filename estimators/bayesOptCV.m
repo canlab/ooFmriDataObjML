@@ -53,7 +53,7 @@ classdef bayesOptCV < Estimator
         bayesOptOpts = [];
         estimator = [];
         cv = @(X,Y)cvpartition(ones(length(Y),1),'KFOLD', 5)
-        scorer = @get_mse;
+        scorer = [];
     end
     
     properties (SetAccess = private)
@@ -69,7 +69,19 @@ classdef bayesOptCV < Estimator
         function obj = bayesOptCV(estimator, cv, scorer, bayesOptOpts)
             obj.estimator = estimator;
             if ~isempty(cv), obj.cv = cv; end
-            if ~isempty(scorer), obj.scorer = scorer; end
+
+            if isempty(scorer)
+                if isa(getBaseEstimator(estimator),'modelClf')
+                    obj.scorer = @get_hinge_loss;
+                elseif isa(getBaseEstimator(estimator),'modelRegressor')
+                    obj.scorer = @get_mse;
+                else
+                    warning('Could not autodetect model type, and no scorer specified. Defaulting to @get_mse.');
+                    obj.scorer = @get_mse;
+                end
+            else
+                obj.scorer = scorer;
+            end
             
             params = estimator.get_params();
             for i = 1:length(bayesOptOpts{1})
@@ -78,6 +90,7 @@ classdef bayesOptCV < Estimator
                 assert(ismember(this_param.Name, params),...
                     sprintf('optimizableVariable names must match %s.get_params()\n', class(estimator)));
             end
+            
             
             obj.bayesOptOpts = bayesOptOpts;
         end

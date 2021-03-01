@@ -9,7 +9,7 @@
 % to me so I'm keeping them. Models will be combination of (modelRegressor,
 % modelClf) x (linearModelEstimator, nonlinearModelEstimator).
 classdef (Abstract) linearModelEstimator < modelEstimator    
-    properties (SetAccess = ?linearModelEstimator)        
+    properties (SetAccess = protected)        
         B = [];
         offset = 0;
     end
@@ -21,8 +21,15 @@ classdef (Abstract) linearModelEstimator < modelEstimator
             yfit_raw = yfit_raw(:);
         end
         
-        function yfit_null = score_null(obj)
-            yfit_null = obj.offset;
+        % not sure if this is valid for classifiers with scoreFcns. The raw
+        % null score for a linearSvmClf with a nonlinear scoreFcn may be
+        % obj.scoreFcn(obj.offset). Need to check this, and if so move
+        % score_raw into modelRegressor, and leave it abstract in modelClf,
+        % implementing it on a case by case basis in modelClf subclases.
+        % Right now I'm just overloading this in modelClf instances that
+        % use scoreFcn's and throwing a warning if they're non-trivial
+        function yfit_raw = score_null(obj, n)           
+           yfit_raw = obj.offset*ones(n,1); 
         end
     end
 end

@@ -180,11 +180,28 @@ classdef crossValScore < crossValidator & yFit
                 Y = obj.Y;
             end
             
+            yfit_raw = zeros(length(Y),1);
             obj.yfit_null = zeros(length(Y),1);
             
             for i = 1:obj.cvpart.NumTestSets                
+                yfit_raw(obj.cvpart.test(i)) = ...
+                    obj.foldEstimator{i}.score_null(obj.cvpart.TestSize(i));
+                
                 obj.yfit_null(obj.cvpart.test(i)) = ...
-                    obj.foldEstimator{i}.predict_null();
+                    obj.foldEstimator{i}.predict_null(obj.cvpart.TestSize(i));
+            end
+            
+            k = unique(obj.cvpart.NumTestSets);
+            obj.scores_null = zeros(k,1);
+            for i = 1:k
+                fold_Y = obj.Y(obj.cvpart.test(i));
+                
+                fold_yfit_raw = yfit_raw(obj.cvpart.test(i));
+                fold_yfit = obj.yfit_null(obj.cvpart.test(i));
+                
+                yfit = manual_yFit(fold_Y, fold_yfit, fold_yfit_raw);
+                
+                obj.scores_null(i) = obj.scorer(yfit);
             end
         end
         
@@ -235,7 +252,11 @@ classdef crossValScore < crossValidator & yFit
         
         %% convenience functions
         function varargout = plot(obj, varargin)
-            varargout = plot@crossValPredict(obj, varargin{:});
+            warning('off','crossValidator:crossValPredict');
+            cvPred = crossValPredict(obj);
+            warning('on','crossValidator:crossValPredict');
+            cvPred.plot(varargin{:});
+            
             this_title = sprintf('Mean score = %0.3f', mean(obj.scores));
             if ~isempty(obj.scores_null)
                 this_title = {this_title, sprintf('Mean null score = %0.3f', mean(obj.scores_null))};

@@ -70,7 +70,7 @@ classdef (Abstract) crossValidator < yFit
                 
                 obj.yfit = obj.yfit_raw;
             elseif isa(this_baseEstimator,'modelClf')
-                warning('You will not be able to convert this object back to crossValScore due to information loss');
+                warning('crossValidator:crossValPredict','You will not be able to convert this object back to crossValScore due to information loss');
                 obj = crossValPredict(cvObj.estimator, cvObj.cv);
                 
                 fnames_score = fieldnames(cvObj);

@@ -222,6 +222,16 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         function yfit_raw = score_samples(obj, X)
             yfit_raw = score_samples@linearModelEstimator(obj,X);
             yfit_raw = obj.scoreFcn(yfit_raw(:));
+        end        
+         
+        function yfit_raw = score_null(varargin)
+            yfit_raw = score_null@linearModelEstimator(varargin{:});
+            
+            
+            st_idx = find(strcmp(obj.fitclinearOpts, 'ScoreTransform'));
+            if ~(strcmp(obj.fitclinearOpts{st_idx+1},'none') || strcmp(obj.fitclinearOpts{st_idx+1}, 'identity'))
+                warning('linearSvmClf.score_null() behavior has not been validated with non-trivial scoreFcn. Please check the results.');
+            end
         end
         
         %% methods for dependent properties

@@ -101,10 +101,12 @@ classdef fmriDataEstimator < Estimator
         end
         
         function obj = fit(obj, dat, Y, varargin)
-            if ~isa(obj.model, 'modelRegressor') || ~isa(obj.model, 'linearModelEstimator')
-                warning(['Only (linearModelEstimator & modelRegressor) objects are fully supported models at this time.', ...
+            if ~isa(obj.model, 'linearModelEstimator') || ...
+                ~(isa(obj.model, 'modelRegressor') || isa(obj.model,'modelClf'))
+                
+                warning(['Only (linearModelEstimator & (modelRegressor || modelClf)) objects are fully supported models at this time.', ...
                     'You will need to call %s.predict() with the ''fast'' option to obtain ',...
-                    'predictions with unsupported model objects.'], obj(class));
+                    'predictions with unsupported model objects.'], class(obj));
             end
             
             t0 = tic;
@@ -154,12 +156,17 @@ classdef fmriDataEstimator < Estimator
                 yfit_raw = obj.model.score_samples(X);
             else
                 if isa(obj.model, 'linearModelEstimator')
-                    assert(isa(obj.model, 'modelRegressor'), ...
-                        'Only modelRegressor linearModelEstimators are currently supported. You can try using predict() with the ''fast'' option but no guarantees of correct behavior.');
-                    
-                    weights = obj.get_weights();
-                    yfit_raw = apply_mask(dat, weights, 'pattern_expression', 'dotproduct', 'none') + ...
-                        obj.model.offset;
+                    if isa(obj.model, 'modelRegressor')
+                        weights = obj.get_weights();
+                        yfit_raw = apply_mask(dat, weights, 'pattern_expression', 'dotproduct', 'none') + ...
+                            obj.model.offset;
+                    elseif isa(obj.model, 'modelClf')
+                        weights = obj.get_weights();
+                        dat = match_space(dat, weights);
+                        yfit_raw = obj.model.score_samples(dat.dat');
+                    else
+                        error('Only modelClf and modelRegressor are supported');
+                    end
                 else
                     error('Only linearModelEstimators are currently supported');
                 end
@@ -191,12 +198,17 @@ classdef fmriDataEstimator < Estimator
                 yfit = obj.model.predict(X);
             else
                 if isa(obj.model, 'linearModelEstimator')
-                    assert(isa(obj.model, 'modelRegressor'), ...
-                        'Only modelRegressor linearModelEstimators are currently supported. You can try using predict() with the ''fast'' option but no guarantees of correct behavior.');
-                    
-                    weights = obj.get_weights();
-                    yfit = apply_mask(dat, weights, 'pattern_expression', 'dotproduct', 'none') + ...
-                        obj.model.offset;
+                    if isa(obj.model, 'modelRegressor')
+                        weights = obj.get_weights();
+                        yfit = apply_mask(dat, weights, 'pattern_expression', 'dotproduct', 'none') + ...
+                            obj.model.offset;
+                    elseif isa(obj.model, 'modelClf')
+                        weights = obj.get_weights();
+                        dat = match_space(dat, weights);
+                        yfit = obj.model.predict(dat.dat');
+                    else
+                        error('Only modelClf and modelRegressor are supported');
+                    end
                 else
                     error('Only linearModelEstimators are currently supported');
                 end
@@ -206,13 +218,13 @@ classdef fmriDataEstimator < Estimator
         
         
         function yfit_null = score_null(obj, varargin)                        
-            yfit_null = obj.model.predict_null(varargin{:});
+            yfit_null = obj.model.score_null(varargin{:});
             
             yfit_null = yfit_null(:);
         end
         
         function yfit_null = predict_null(obj, varargin)                        
-            yfit_null = obj.model.score_null(varargin{:});
+            yfit_null = obj.model.predict_null(varargin{:});
             
             yfit_null = yfit_null(:);
         end
@@ -235,6 +247,100 @@ classdef fmriDataEstimator < Estimator
         function weights = get_weights(obj)
             weights = obj.brainModel;
             weights.dat = obj.model.B(:);
+        end
+    end
+    
+    methods (Static, Access = private)
+
+        % this was largely copied from apply_mask in canlabCore
+        % takes dat1 and ensures that it matches the space of dat2, then
+        % returns dat2. dat2 should be weights as an fmri_data object,
+        % using the fmri_data metdata from brainModel.
+        function dat1 = match_space(dat1, dat2)
+            isdiff = compare_space(dat1, dat2);
+
+            if isdiff == 1 || isdiff == 2 % diff space, not just diff voxels
+                % == 3 is ok, diff non-empty voxels
+
+                % Both work, but resample_space does not require going back to original
+                % images on disk
+                dat2 = resample_space(dat2, dat1);
+
+                % tor added may 1 - removed voxels was not legal otherwise
+                %mask.removed_voxels = mask.removed_voxels(mask.volInfo.wh_inmask);
+                % resample_space is not *always* returning legal sizes for removed
+                % vox? maybe this was updated to be legal
+
+                if length(dat2.removed_voxels) == dat2.volInfo.nvox
+                    disp('Warning: resample_space returned illegal length for removed voxels. Fixing...');
+                    dat2.removed_voxels = dat2.removed_voxels(dat2.volInfo.wh_inmask);
+                end
+            end
+            
+
+            % nonemptydat: Logical index of voxels with valid data, in in-mask space
+            nonemptydat = get_nonempty_voxels(dat1);
+
+            dat1 = replace_empty(dat1);
+
+            % Check/remove NaNs. This could be done in-object...
+            dat2.dat(isnan(dat2.dat)) = 0;
+
+            % Replace if necessary
+            dat2 = replace_empty(dat2);
+            
+            % save which are in mask, but do not replace with logical, because mask may
+            % have weights we want to preserve
+            inmaskdat = logical(dat2.dat);
+
+
+            % Remove out-of-mask voxels
+            % ---------------------------------------------------
+
+            % mask.dat has full list of voxels
+            % need to find vox in both mask and original data mask
+
+            if size(dat2.volInfo.image_indx, 1) == size(dat1.volInfo.image_indx, 1)
+                n = size(dat2.volInfo.image_indx, 1);
+
+                if size(nonemptydat, 1) ~= n % should be all vox OR non-empty vox
+                    nonemptydat = zeroinsert(~dat1.volInfo.image_indx, nonemptydat);
+                end
+
+                if size(inmaskdat, 1) ~= n
+                    inmaskdat = zeroinsert(~dat2.volInfo.image_indx, inmaskdat);
+                end
+
+                inboth = inmaskdat & nonemptydat;
+
+                % List in space of in-mask voxels in dat object.
+                % Remove these from the dat object
+                to_remove = ~inboth(dat1.volInfo.wh_inmask);
+
+            elseif size(dat2.dat, 1) == size(dat1.volInfo.image_indx, 1)
+
+                % mask vox are same as total image vox
+                nonemptydat = zeroinsert(~dat1.volInfo.image_indx, nonemptydat);
+                inboth = inmaskdat & dat1.volInfo.image_indx & nonemptydat;
+
+                % List in space of in-mask voxels in dat object.
+                to_remove = ~inboth(dat1.volInfo.wh_inmask);
+
+            elseif size(dat2.dat, 1) == size(dat1.volInfo.wh_inmask, 1)
+                % mask vox are same as in-mask voxels in dat
+                inboth = inmaskdat & dat1.volInfo.image_indx(dat1.volInfo.wh_inmask) & nonemptydat;
+
+                % List in space of in-mask voxels in .dat field.
+                to_remove = ~inboth;
+
+            else
+                fprintf('Sizes do not match!  Likely bug in resample_to_image_space.\n')
+                fprintf('Vox in mask: %3.0f\n', size(dat2.dat, 1))
+                fprintf('Vox in dat - image volume: %3.0f\n', size(dat1.volInfo.image_indx, 1));
+                fprintf('Vox in dat - image in-mask area: %3.0f\n', size(dat1.volInfo.wh_inmask, 1));
+            end
+
+            dat1 = remove_empty(dat1, to_remove);
         end
     end
 end
