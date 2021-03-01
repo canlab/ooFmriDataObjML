@@ -49,7 +49,7 @@
 classdef linearSvmRegressor < linearModelEstimator & modelRegressor
     properties
         fitrlinearOpts = {};
-        C = [];
+        C = []; % defaults to 1 if neither C nor Lambda are found by the constructor
     end
     
     properties (Dependent)
@@ -60,28 +60,58 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
     
     properties (Dependent, Access = ?modelEstimator)
         lambda;
+        regularization
     end  
     
     properties (SetAccess = private)                
         isFitted = false;
         fitTime = -1;
         
-        CV_funhan = [];
+        % CV_funhan = [];
     end
     
     properties (Access = ?Estimator)
-        hyper_params = {'intercept', 'C', 'lambda', 'epsilon'};
+        hyper_params = {'intercept', 'C', 'lambda', 'epsilon', 'regularization'};
     end
           
     
     methods
         function obj = linearSvmRegressor(varargin)
+            % defaults
+            intercept = true;
+            learner = 'svm';
+            regularization = 'none';
+            
             fitrlinearOpts_idx = find(strcmp(varargin,'fitrlinearOpts'));
             if ~isempty(fitrlinearOpts_idx)
                 obj.fitrlinearOpts = varargin{fitrlinearOpts_idx + 1};
             end
             
-            obj.intercept = true; % default
+            for i = 1:length(obj.fitrlinearOpts)
+                if ischar(obj.fitrlinearOpts{i})
+                    switch(obj.fitrlinearOpts{i})
+                        case 'FitBias'
+                            intercept = varargin{i+1};
+                        case 'Learner'
+                            learner = varargin{i+1};
+                        case 'Regularization'
+                            regularization = varargin{i+1};
+                        case 'KFold'
+                            error('Internal cross validation is not supported. Please wrap linearSvmClf in a bayesOptCV object or similar instead');
+                        case 'CVPartition'
+                            error('Internal cross validation is not supported. Please wrap linearSvmClf in a bayesOptCV object or similar instead');
+                        case 'Holdout'
+                            error('Internal cross validation is not supported. Please wrap linearSvmClf in a bayesOptCV object or similar instead');
+                    end
+                end
+            end
+            % we don't let fitrlinearOpts set these directly because
+            % setting these in turn will modify fitclineearOpts, and who
+            % knows what kind of strange behavior that feedback may cause
+            % down the line. Better to have it in two separate invocations.
+            obj.intercept = intercept;
+            obj.learner = learner;
+            obj.regularization = regularization;
             
             for i = 1:length(varargin)
                 if ischar(varargin{i})
@@ -98,19 +128,22 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
                                 warning('Overriding firlinearOpts epsilon = %0.3f with linearSvmRegressor epsilon = 0.3%f',obj.epsilon, varargin{i+1});
                             end
                             obj.epsilon = varargin{i+1};
+                        case 'regularization'
+                            obj.regularization = varargin{i+1};
                         otherwise
                             warning('Option %s not supported', varargin{i});
                     end
                 end
             end
             
+            % this makes C=1 be the default if neither Lambda nor C are
+            % specified.
             if ~any(strcmp(obj.fitrlinearOpts, 'Lambda'))
                 obj.C = 1;
             end
             
-            obj.learner = 'svm';
-            
-            obj = obj.check_cv_params();
+            % see note above check_cv_params definition below
+            % obj = obj.check_cv_params();
         end
         
         function obj = fit(obj, X, Y)
@@ -118,9 +151,16 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
             
             if ~isempty(obj.C) % if C parameter is in use, set lambda accordingly
-                obj.lambda = obj.C/length(Y);
+                % setting lambda erases C (since outside of this specific
+                % case, you can't reconcile the two, since you don't know
+                % n, and instead C is erased.
+                C = obj.C;
+                obj.lambda = C/length(Y);
+                obj.C = C;
             end
             
+            % see note above check_cv_params definition below
+            %{
             fitrlinearOpts = obj.fitrlinearOpts;
             if ~isempty(obj.CV_funhan)
                 cvpart = obj.CV_funhan(X,Y);
@@ -135,6 +175,12 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             end
             
             Mdl = fitrlinear(double(X),Y, fitrlinearOpts{:});
+            %}
+            Mdl = fitrlinear(double(X),Y, obj.fitrlinearOpts{:});
+            
+            if isa(Mdl,'ClassificationPartitionedLinear')
+                error('linearSvmClf does not support using fitrlinear''s internal cross validation. Please wrap linearSvmClf in a crossValScore() object instead.');
+            end
             
             obj.B = Mdl.Beta(:);
             obj.offset = Mdl.Bias;
@@ -188,6 +234,11 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             else
                 obj.fitrlinearOpts{lambda_idx + 1} = val;
             end
+            
+            % we can't know what C is without having a sample to fit to
+            % (it depends on sample size), so we just erase this. If we're
+            % setting lambda, we don't need C anyway.
+            obj.C = [];
         end
         
         function val = get.lambda(obj)            
@@ -218,9 +269,51 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
                 val = obj.fitrlinearOpts{epsilon_idx+1};
             end
         end
+        
+        function obj = set.regularization(obj, val)
+            % we cast to char() because bayesOpt will pass character
+            % vectors in as type categorical(), which will cause
+            % fitrlinear to fail.
+            val = char(val);
+            assert(ismember(val,{'ridge','lasso','none'}), 'regularization must be ''ridge'', ''lasso'', or ''none''');
+            
+            regularization_idx = find(strcmp(obj.fitrlinearOpts,'Regularization'));
+                
+            if strcmp(val,'none')
+                if isempty(regularization_idx)
+                    return
+                else
+                    obj.fitrlinearOpts{regularization_idx:regularization_idx+1} = [];
+                end
+            else
+                % we cast to char() because bayesOpt will pass character
+                % vectors in as type categorical(), which will cause
+                % fitrlinear to fail.
+                if isempty(regularization_idx)
+                    obj.fitrlinearOpts = [obj.fitrlinearOpts, {'Regularization', val)];
+                else
+                    obj.fitrlinearOpts{regularization_idx + 1} = val;
+                end
+            end
+        end
+        
+        function val = get.regularization(obj)            
+            regularization_idx = find(strcmp(obj.fitrlinearOpts, 'Regularization'));
+            if ~any(regularization_idx)
+                val = [];
+            else
+                val = obj.fitrlinearOpts{regularization_idx+1};
+            end
+        end
     end
     
     methods (Access = private)
+        % if you let fitrlinear perform cross-val internally to optimize
+        % some parameter or other you will need to update fit to work on
+        % ClassificationPartitionedLinear objects that are the result of
+        % these CV routines, but it's not clear what purpose this would
+        % serve so for now this is commented out.
+        %{
         % fitrlinear has an argument for specifying cross
         % validation folds, and this check incorporates a method for
         % allowing the user to specify function handles to cvpartition 
@@ -237,5 +330,6 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
                 end
             end
         end
+        %}
     end
 end
