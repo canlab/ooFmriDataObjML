@@ -135,7 +135,7 @@ classdef crossValPredict < crossValidator & yFit
             for i = 1:obj.cvpart.NumTestSets                
                 train_Y = Y(~obj.cvpart.test(i));
                 obj.yfit_null(obj.cvpart.test(i)) = ...
-                    obj.foldEstimator{i}.predict_null(obj.cvpart.TestSize(1));
+                    obj.foldEstimator{i}.predict_null(obj.cvpart.TestSize(i));
             end
         end
         
