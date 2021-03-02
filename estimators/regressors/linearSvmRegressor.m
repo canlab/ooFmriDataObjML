@@ -52,20 +52,24 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
         C = []; % defaults to 1 if neither C nor Lambda are found by the constructor
     end
     
-    properties (Dependent)
+    properties (Dependent, SetAccess = private)
         learner;
-        intercept;
-        epsilon;
+        B;
+        offset;
     end
     
     properties (Dependent, Access = ?modelEstimator)
+        intercept;
+        epsilon;
         lambda;
-        regularization
+        regularization;
     end  
     
     properties (SetAccess = private)                
         isFitted = false;
         fitTime = -1;
+        
+        Mdl = [];
         
         % CV_funhan = [];
     end
@@ -176,17 +180,44 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             
             Mdl = fitrlinear(double(X),Y, fitrlinearOpts{:});
             %}
-            Mdl = fitrlinear(double(X),Y, obj.fitrlinearOpts{:});
             
-            if isa(Mdl,'ClassificationPartitionedLinear')
+            % this indirectly sets B and offset, since those just pull from
+            % obj.Mdl
+            obj.Mdl = fitrlinear(double(X),Y, obj.fitrlinearOpts{:});
+            
+            if isa(obj.Mdl,'ClassificationPartitionedLinear')
                 error('linearSvmClf does not support using fitrlinear''s internal cross validation. Please wrap linearSvmClf in a crossValScore() object instead.');
             end
             
-            obj.B = Mdl.Beta(:);
-            obj.offset = Mdl.Bias;
-            
             obj.isFitted = true;
             obj.fitTime = toc(t0);
+        end
+        
+        
+        %% dependent methods
+        
+        function val = get.B(obj)
+            if isempty(obj.Mdl)
+                val = [];
+            else
+                val = obj.Mdl.Beta(:);
+            end
+        end
+        
+        function obj = set.B(obj, ~)
+            warning('You shouldn''t be setting B directly. B is part of obj.Mdl. Doing nothing.');
+        end
+        
+        function val = get.offset(obj)
+            if isempty(obj.Mdl)
+                val = 0;
+            else
+                val = obj.Mdl.Bias;
+            end
+        end
+        
+        function obj = set.offset(obj, ~)
+            warning('You shouldn''t be setting offset directly. offset is part of obj.Mdl. Doing nothing.');
         end
         
         function obj = set.learner(obj, val)
@@ -290,7 +321,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
                 % vectors in as type categorical(), which will cause
                 % fitrlinear to fail.
                 if isempty(regularization_idx)
-                    obj.fitrlinearOpts = [obj.fitrlinearOpts, {'Regularization', val)];
+                    obj.fitrlinearOpts = [obj.fitrlinearOpts, {'Regularization', val}];
                 else
                     obj.fitrlinearOpts{regularization_idx + 1} = val;
                 end

@@ -9,9 +9,15 @@
 % to me so I'm keeping them. Models will be combination of (modelRegressor,
 % modelClf) x (linearModelEstimator, nonlinearModelEstimator).
 classdef (Abstract) linearModelEstimator < modelEstimator    
-    properties (SetAccess = protected)        
-        B = [];
-        offset = 0;
+    % in most cases these can just be set to empty and zero values, but we
+    % define them as abstract so we can change their access properties
+    % downstream for things like Dependent calls.
+    % These will usually be suitable defaults
+    %   B = [];
+    %   offset = 0;
+    properties (Abstract, SetAccess = private)
+        B;
+        offset;
     end
     
     methods

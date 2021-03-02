@@ -116,11 +116,11 @@
 %     f = figure(2);
 %     cvPredictor.plot('Parent',gca(f));
 classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
-    properties
+    properties (SetAccess = ?modelEstimator)
         numcomponents = [];      
     end
     
-    properties (Dependent)
+    properties (Dependent, SetAccess = ?modelEstimator)
         lambda
         alpha
     end
@@ -129,6 +129,9 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
         isFitted = false;
         fitTime = -1;  
         lassoParams = {};
+        
+        B = [];
+        offset = 0;
         
         lassoCV_funhan = [];
     end

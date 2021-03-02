@@ -6,6 +6,9 @@ classdef pcrRegressor < linearModelEstimator & modelRegressor
     properties (SetAccess = private)                
         isFitted = false;
         fitTime = -1;
+        
+        B = [];
+        offset = 0;
     end
     
     properties (Access = ?Estimator)

@@ -50,6 +50,9 @@ classdef multilevelGlmRegressor < linearModelEstimator & modelRegressor
         isFitted = false;
         fitTime = -1;
         
+        B = [];
+        offset = 0;
+        
         glmfit_opts = {};
         
         stats = [];

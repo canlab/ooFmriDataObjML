@@ -14,7 +14,7 @@ classdef (Abstract) modelRegressor < modelEstimator
         % if it's X it may not be a null prediction, if it's Y it may not
         % be a prediction, instead we simply supply a length.
         function yfit_null = predict_null(obj, n)
-            yfit_null = obj.score_null(obj, n);
+            yfit_null = obj.score_null(n);
         end
     end
 end

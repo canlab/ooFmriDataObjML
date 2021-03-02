@@ -53,9 +53,20 @@ classdef linearSvmClf < linearModelEstimator & modelClf
     end
     
     properties (Dependent)
-        learner;
-        intercept;
         scoreFcn;
+    end
+    
+    properties (Dependent, SetAccess = ?modelEstimator)
+        intercept;
+        lambda;
+        regularization;
+    end  
+    
+    properties (Dependent, SetAccess=private)
+        learner;
+        
+        B;
+        offset;
     end
     
     properties (Access = private, Hidden)
@@ -67,11 +78,6 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         % it's get method to pull this data.
         scoreFcn0 = @(x1)(x1);
     end
-    
-    properties (Dependent, SetAccess = ?modelEstimator)
-        lambda;
-        regularization;
-    end  
     
     properties (SetAccess = private)                
         isFitted = false;
@@ -86,6 +92,8 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         % or [-1,1] coding, but just in case we're going to try to use
         % [-1,1] which is standard for SVMs.
         decisionFcn = @(x1)subsref([-1; 1], substruct('()', {(x1 > 0) + 1}));
+        
+        Mdl = [];
     end
     
     properties (Access = ?Estimator)
@@ -204,14 +212,11 @@ classdef linearSvmClf < linearModelEstimator & modelClf
             
             Mdl = fitclinear(double(X),Y, fitclinearOpts{:});
             %}
-            Mdl = fitclinear(double(X),Y, obj.fitclinearOpts{:});
+            obj.Mdl = fitclinear(double(X),Y, obj.fitclinearOpts{:});
             
-            if isa(Mdl,'ClassificationPartitionedLinear')
+            if isa(obj.Mdl,'ClassificationPartitionedLinear')
                 error('linearSvmClf does not support using fitclinear''s internal cross validation. Please wrap linearSvmClf in a crossValScore() object instead.');
             end
-            
-            obj.B = Mdl.Beta(:);
-            obj.offset = Mdl.Bias;
             
             obj.prior = sum(obj.decisionFcn(Y) == 1)/length(Y);
             
@@ -235,6 +240,30 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         end
         
         %% methods for dependent properties
+        
+        function val = get.B(obj)
+            if isempty(obj.Mdl)
+                val = [];
+            else
+                val = obj.Mdl.Beta(:);
+            end
+        end
+        
+        function obj = set.B(obj, ~)
+            warning('You shouldn''t be setting B directly. B is part of obj.Mdl. Doing nothing.');
+        end
+        
+        function val = get.offset(obj)
+            if isempty(obj.Mdl)
+                val = 0;
+            else
+                val = obj.Mdl.Bias;
+            end
+        end
+        
+        function obj = set.offset(obj, ~)
+            warning('You shouldn''t be setting offset directly. offset is part of obj.Mdl. Doing nothing.');
+        end
         
         function obj = set.learner(obj, val)
             if ~strcmp(val, 'svm')

@@ -15,6 +15,9 @@ classdef olsRegressor < linearModelEstimator & modelRegressor
         isFitted = false;
         fitTime = -1;
         
+        B = [];
+        offset = 0;
+        
         intercept = true;
     end
     
