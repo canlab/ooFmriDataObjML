@@ -70,11 +70,11 @@ classdef pipeline < Estimator & Transformer
             t0 = tic;
             for i = 1:length(obj.transformers)
                 % output from one transformer is input to the next
-                fprintf('Fitting %s\n', obj.transformer_names{i});
+                if obj.verbose, fprintf('Fitting %s\n', obj.transformer_names{i}); end
                 [obj.transformers{i}, dat] = obj.transformers{i}.fit_transform(dat);            
             end
             if ~isempty(obj.estimator)
-                fprintf('Fitting %s\n', obj.estimator_name);
+                if obj.verbose, fprintf('Fitting %s\n', obj.estimator_name); end
                 
                 obj.estimator = obj.estimator.fit(dat, Y);
             end
@@ -86,7 +86,7 @@ classdef pipeline < Estimator & Transformer
         % apply all transforms
         function dat = transform(obj, dat, varargin)
             for i = 1:length(obj.transformers)
-                fprintf('Applying %s\n', obj.transformer_names{i});
+                if obj.verbose, fprintf('Applying %s\n', obj.transformer_names{i}); end
                 % output from one transformer is input to the next
                 dat = obj.transformers{i}.transform(dat);
             end
@@ -99,7 +99,7 @@ classdef pipeline < Estimator & Transformer
             
             dat = obj.transform(dat, varargin{:});
             if ~isempty(obj.estimator)
-                fprintf('Applying %s\n', obj.estimator_name);
+                if obj.verbose, fprintf('Applying %s\n', obj.estimator_name); end
                 yfit_raw = obj.estimator.score_samples(dat);
             end
         end
@@ -111,7 +111,7 @@ classdef pipeline < Estimator & Transformer
             
             dat = obj.transform(dat, varargin{:});
             if ~isempty(obj.estimator)
-                fprintf('Applying %s\n', obj.estimator_name);
+                if obj.verbose, fprintf('Applying %s\n', obj.estimator_name); end
                 yfit = obj.estimator.predict(dat);
             end
         end    

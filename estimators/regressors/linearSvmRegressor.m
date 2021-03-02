@@ -316,7 +316,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
                 if isempty(regularization_idx)
                     return
                 else
-                    obj.fitrlinearOpts{regularization_idx:regularization_idx+1} = [];
+                    obj.fitrlinearOpts(regularization_idx:regularization_idx+1) = [];
                 end
             else
                 % we cast to char() because bayesOpt will pass character

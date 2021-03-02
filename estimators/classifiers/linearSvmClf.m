@@ -226,7 +226,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
             obj.fitTime = toc(t0);
         end
                 
-        function yfit_raw = score_samples(obj, X)
+        function yfit_raw = score_samples(obj, X, varargin)
             yfit_raw = score_samples@linearModelEstimator(obj,X);
             yfit_raw = obj.scoreFcn(yfit_raw(:));
         end        
@@ -339,7 +339,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
                 if isempty(regularization_idx)
                     return
                 else
-                    obj.fitclinearOpts{regularization_idx:regularization_idx+1} = [];
+                    obj.fitclinearOpts(regularization_idx:regularization_idx+1) = [];
                 end
             else
                 if isempty(regularization_idx)

@@ -12,8 +12,11 @@ classdef (Abstract) Estimator
         % score_samples should return continuous values, distance from
         % hyperplane, posterior probabilities, etc. score_samples will
         % usually be used for optimization (e.g. hinge loss)
-        score_samples(obj, X)
-        predict(obj, X)
+        % We have a varargin because pipelines need to be able to accept
+        % ('fast', true) so that fmriData transformers can evaluate 
+        % efficiently during CV
+        score_samples(obj, X, varargin)
+        predict(obj, X, varargin)
         
         % returns a null prediction. For regressors this is just the mean
         % outcome value. For classifiers it may be more complicated.
