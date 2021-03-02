@@ -291,12 +291,14 @@ classdef combatTransformer < Transformer
 
             ref_dat = dat(:,ismember(batch,ref));
             ref_n = n_batches(ismember(uniq_batch,ref));
-            try
+            % this is useful for diagnostics, but don't leave it because parallel workers 
+            % will get silently stuck with a keyboard catch
+            %try
                 var_pooled = ((ref_dat - (design(ismember(batch,ref),:)*B_hat)').^2) * ...
                     repmat(1/ref_n, ref_n, 1);
-            catch
-                keyboard
-            end
+            %catch
+            %    keyboard
+            %end
             
             B_hat = B_hat(n_batches+1:end,:); % drop subject specific intercepts
         end
