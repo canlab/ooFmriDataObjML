@@ -1,5 +1,5 @@
-% obj = fmriDataEstimator(Estimator)
-% In most cases fmriDataEstimators will serve as the primary vehical for
+% obj = fmri2VxlFeatTransformer(Estimator)
+% In most cases fmri2VxlFeatTransformers will serve as the primary vehical for
 % Estimator implementation in this library. Exceptions are noted at the end
 % of this help doc.
 %   
@@ -20,7 +20,7 @@
 %       yfit = predict(obj, dat, [options])
 %                   - Use modelEstimator to predict outcome in dat. 
 %           options::
-%               'fast' - true/false. If true fmriDataEstimator assumes that 
+%               'fast' - true/false. If true fmri2VxlFeatTransformer assumes that 
 %                       dat.dat is already appropriately vectorized to be 
 %                       passed through directly to modelEstimator. 
 %                       Otherwise dat is transformed to match brainModel 
@@ -59,35 +59,32 @@
 % We implement ML algoithms as modelEstimators which expect
 % vectorized input, but fmri_data is not vectorized in a predictable way. 
 % fmri_data objects can differ in resolution and spatial extent for 
-% instance. fmriDataEstimators serve as wrappers that mediate between 
+% instance. fmri2VxlFeatTransformers serve as wrappers that mediate between 
 % fmri_data input and vectorized input.
 %
 % Separating the ML algorithm from the fmri_data handling is useful because
 % it allows for more flexible feature construction (through transformers
 % and pipelines). The final feature set does not need to be an fmri_data
 % object, and in that case you can simply invoke linearModelEstimators
-% directly rather than through an fmriDataEstimator.
+% directly rather than through an fmri2VxlFeatTransformer.
 
-classdef fmriDataEstimator < Estimator
+classdef fmri2VxlFeatTransformer < Transformer
     properties (SetAccess = private)
-        model = @plsRegressor
         featureConstructor = @(X)(features(X.dat'));
                 
         brainModel = fmri_data();
+        datSize = [1,1];
         
         isFitted = false;
         fitTime = -1;
     end
-
-    properties (Access = ?Estimator)
+    
+    properties (Access = ?Transformer)
         hyper_params = {};
     end
     
     methods   
-        function obj = fmriDataEstimator(model, varargin)
-            assert(isa(model,'modelEstimator'),...
-                'Only modelEstimators are suppoted.')
-            
+        function obj = fmri2VxlFeatTransformer(varargin)
             for i = 1:length(varargin)
                 if ischar(varargin{i})
                     switch varargin{i}
@@ -96,19 +93,9 @@ classdef fmriDataEstimator < Estimator
                     end
                 end
             end
-            
-            obj.model = model;
         end
         
-        function obj = fit(obj, dat, Y, varargin)
-            if ~isa(obj.model, 'linearModelEstimator') || ...
-                ~(isa(obj.model, 'modelRegressor') || isa(obj.model,'modelClf'))
-                
-                warning(['Only (linearModelEstimator & (modelRegressor || modelClf)) objects are fully supported models at this time.', ...
-                    'You will need to call %s.predict() with the ''fast'' option to obtain ',...
-                    'predictions with unsupported model objects.'], class(obj));
-            end
-            
+        function obj = fit(obj, dat, varargin)            
             t0 = tic;
             % get prototype image
             % this needs a solution for when image 1 differs in voxel count
@@ -119,13 +106,10 @@ classdef fmriDataEstimator < Estimator
             for field = fnames
                 obj.brainModel.(field{1}) = [];
             end
-            obj.brainModel.dat = [];
+            obj.datSize = size(obj.brainModel.dat);
+            obj.brainModel.dat = [];            
             
             obj.brainModel.history = {[class(obj), ' fit']};
-            
-            % this is where the MVPA model is actually fit
-            X = obj.featureConstructor(dat);
-            obj.model = obj.model.fit(X, Y, varargin{:});            
             
             obj.isFitted = true;
             
@@ -133,7 +117,7 @@ classdef fmriDataEstimator < Estimator
         end
         
         % similar to predict but calls obj.model.score_samples()
-        function yfit_raw = score_samples(obj, dat, varargin)
+        function dat = transform(obj, dat, varargin)
             fast = false;
             for i = 1:length(varargin)
                 if ischar(varargin{i})
@@ -150,103 +134,19 @@ classdef fmriDataEstimator < Estimator
             % slow option - will transform dat to be in obj.brainModel()'s
             %   space, so more robust, but slower. Good for testing models
             %   on novel data.
-            assert(obj.isFitted, sprintf('Please call %s.fit() before %s.predict().\n',class(obj)));
-            if fast
-                X = obj.featureConstructor(dat);
-                yfit_raw = obj.model.score_samples(X);
-            else
-                if isa(obj.model, 'linearModelEstimator')
-                    if isa(obj.model, 'modelRegressor')
-                        weights = obj.get_weights();
-                        yfit_raw = apply_mask(dat, weights, 'pattern_expression', 'dotproduct', 'none') + ...
-                            obj.model.offset;
-                    elseif isa(obj.model, 'modelClf')
-                        weights = obj.get_weights();
-                        dat = match_space(dat, weights);
-                        yfit_raw = obj.model.score_samples(dat.dat');
-                    else
-                        error('Only modelClf and modelRegressor are supported');
-                    end
-                else
-                    error('Only linearModelEstimators are currently supported');
-                end
+            assert(obj.isFitted, sprintf('Please call %s.fit() before %s.transform().\n',class(obj)));
+            if ~fast
+                weights = obj.get_weights();
+                dat = obj.match_space(dat, weights);
             end
-            yfit_raw = yfit_raw(:);
-        end
-                
-        % similar to score_samples but calls obj.model.predict()
-        function yfit = predict(obj, dat, varargin)
-            fast = false;
-            for i = 1:length(varargin)
-                if ischar(varargin{i})
-                    switch varargin{i}
-                        case 'fast'
-                            fast = varargin{i+1};
-                    end
-                end
-            end
-                            
-            % we have a fast option and a slow option.
-            % fast option - will work if dat is in the same space as
-            %   obj.brainModel(). Good for faster cross validation.
-            % slow option - will transform dat to be in obj.brainModel()'s
-            %   space, so more robust, but slower. Good for testing models
-            %   on novel data.
-            assert(obj.isFitted, sprintf('Please call %s.fit() before %s.predict().\n',class(obj)));
-            if fast
-                X = obj.featureConstructor(dat);
-                yfit = obj.model.predict(X);
-            else
-                if isa(obj.model, 'linearModelEstimator')
-                    if isa(obj.model, 'modelRegressor')
-                        weights = obj.get_weights();
-                        yfit = apply_mask(dat, weights, 'pattern_expression', 'dotproduct', 'none') + ...
-                            obj.model.offset;
-                    elseif isa(obj.model, 'modelClf')
-                        weights = obj.get_weights();
-                        dat = match_space(dat, weights);
-                        yfit = obj.model.predict(dat.dat');
-                    else
-                        error('Only modelClf and modelRegressor are supported');
-                    end
-                else
-                    error('Only linearModelEstimators are currently supported');
-                end
-            end
-            yfit = yfit(:);
-        end
-        
-        
-        function yfit_null = score_null(obj, varargin)                        
-            yfit_null = obj.model.score_null(varargin{:});
             
-            yfit_null = yfit_null(:);
-        end
-        
-        function yfit_null = predict_null(obj, varargin)                        
-            yfit_null = obj.model.predict_null(varargin{:});
-            
-            yfit_null = yfit_null(:);
-        end
-        
-        % fmriDataEstimator's would take no hyperparameters, and simply
-        % pass through whatever the underlying functions hyperparameters 
-        % are.
-        function params = get_params(obj)
-            params = obj.model.get_params();
-        end
-        
-        function obj = set_hyp(obj, hyp_name, hyp_val)
-            params = obj.get_params();
-            assert(ismember(hyp_name, params), ...
-                sprintf('%s must be a hyperparameter of %s\n', hyp_name, class(obj.model)));
-            
-            obj.model = obj.model.set_hyp(hyp_name, hyp_val);
+            dat = obj.featureConstructor(dat);
         end
         
         function weights = get_weights(obj)
             weights = obj.brainModel;
-            weights.dat = obj.model.B(:);
+            
+            weights.dat = ones(obj.datSize);
         end
     end
     
@@ -343,4 +243,26 @@ classdef fmriDataEstimator < Estimator
             dat1 = remove_empty(dat1, to_remove);
         end
     end
+end
+
+
+% shamelyessly ripped off from canlabCore's apply_mask()
+function nonemptydat = get_nonempty_voxels(dat)
+empty_voxels = all(dat.dat' == 0 | isnan(dat.dat'), 1)';
+
+if size(empty_voxels, 1) == dat.volInfo.n_inmask
+    % .dat is full in-mask length, we have not called remove_voxels or there are none to remove
+    nonemptydat = ~empty_voxels;
+    
+elseif length(dat.removed_voxels) == dat.volInfo.n_inmask
+    % .dat is not in-mask length, and we have .removed_voxels defined
+    nonemptydat = false(dat.volInfo.n_inmask, 1);
+    nonemptydat(~dat.removed_voxels) = true;
+    
+    % additional: we could have invalid voxels that have been changed/added since
+    % remove_empty was last called.
+    %     dat.removed_voxels(dat.removed_voxels) =
+    %     nonemptydat(empty_voxels
+end
+
 end

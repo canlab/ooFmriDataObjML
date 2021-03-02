@@ -84,7 +84,7 @@ classdef pipeline < Estimator & Transformer
         end
         
         % apply all transforms
-        function dat = transform(obj, dat)
+        function dat = transform(obj, dat, varargin)
             for i = 1:length(obj.transformers)
                 fprintf('Applying %s\n', obj.transformer_names{i});
                 % output from one transformer is input to the next
@@ -97,10 +97,10 @@ classdef pipeline < Estimator & Transformer
             assert(~isempty(obj.estimator), ...
                 'This pipeline does not terminate in a estimator. Try pipeline.transform() instead');
             
-            dat = obj.transform(dat);
+            dat = obj.transform(dat, varargin{:});
             if ~isempty(obj.estimator)
                 fprintf('Applying %s\n', obj.estimator_name);
-                yfit_raw = obj.estimator.score_samples(dat, varargin{:});
+                yfit_raw = obj.estimator.score_samples(dat);
             end
         end
         
@@ -109,10 +109,10 @@ classdef pipeline < Estimator & Transformer
             assert(~isempty(obj.estimator), ...
                 'This pipeline does not terminate in a estimator. Try pipeline.transform() instead');
             
-            dat = obj.transform(dat);
+            dat = obj.transform(dat, varargin{:});
             if ~isempty(obj.estimator)
                 fprintf('Applying %s\n', obj.estimator_name);
-                yfit = obj.estimator.predict(dat, varargin{:});
+                yfit = obj.estimator.predict(dat);
             end
         end    
         
