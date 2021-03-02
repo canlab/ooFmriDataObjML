@@ -101,11 +101,13 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
                         case 'Regularization'
                             regularization = varargin{i+1};
                         case 'KFold'
-                            error('Internal cross validation is not supported. Please wrap linearSvmClf in a bayesOptCV object or similar instead');
+                            error('Internal cross validation is not supported. Please wrap linearSvmRegressor in a bayesOptCV object or similar instead');
                         case 'CVPartition'
-                            error('Internal cross validation is not supported. Please wrap linearSvmClf in a bayesOptCV object or similar instead');
+                            error('Internal cross validation is not supported. Please wrap linearSvmRegressor in a bayesOptCV object or similar instead');
                         case 'Holdout'
-                            error('Internal cross validation is not supported. Please wrap linearSvmClf in a bayesOptCV object or similar instead');
+                            error('Internal cross validation is not supported. Please wrap linearSvmRegressor in a bayesOptCV object or similar instead');
+                        case 'CrossVal'
+                            error('Internal cross validation is not supported. Please wrap linearSvmRegressor in a bayesOptCV object or similar instead');
                     end
                 end
             end
@@ -186,7 +188,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             obj.Mdl = fitrlinear(double(X),Y, obj.fitrlinearOpts{:});
             
             if isa(obj.Mdl,'ClassificationPartitionedLinear')
-                error('linearSvmClf does not support using fitrlinear''s internal cross validation. Please wrap linearSvmClf in a crossValScore() object instead.');
+                error('linearSvmRegressor does not support using fitrlinear''s internal cross validation. Please wrap linearSvmRegressor in a crossValScore() object instead.');
             end
             
             obj.isFitted = true;

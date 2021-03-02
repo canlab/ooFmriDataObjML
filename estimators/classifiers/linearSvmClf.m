@@ -131,6 +131,8 @@ classdef linearSvmClf < linearModelEstimator & modelClf
                             error('Internal cross validation is not supported. Please wrap linearSvmClf in a bayesOptCV object or similar instead');
                         case 'Holdout'
                             error('Internal cross validation is not supported. Please wrap linearSvmClf in a bayesOptCV object or similar instead');
+                            case 'CrossVal'
+                            error('Internal cross validation is not supported. Please wrap linearSvmClf in a bayesOptCV object or similar instead');
                     end
                 end
             end
