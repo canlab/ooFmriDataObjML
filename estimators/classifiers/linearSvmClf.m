@@ -233,7 +233,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
          
         function yfit_raw = score_null(varargin)
             yfit_raw = score_null@linearModelEstimator(varargin{:});
-            
+            yfit_raw = obj.scoreFcn(yfit_raw(:));
             
             st_idx = find(strcmp(obj.fitclinearOpts, 'ScoreTransform'));
             if ~(strcmp(obj.fitclinearOpts{st_idx+1},'none') || strcmp(obj.fitclinearOpts{st_idx+1}, 'identity'))

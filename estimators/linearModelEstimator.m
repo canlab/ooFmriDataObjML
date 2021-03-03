@@ -15,16 +15,14 @@ classdef (Abstract) linearModelEstimator < modelEstimator
     % These will usually be suitable defaults
     %   B = [];
     %   offset = 0;
-    properties (Abstract, SetAccess = private)
+    properties (Abstract, SetAccess = private) % <-- check this, I'm not sure it should be set to private
         B;
         offset;
     end
     
     methods
         function yfit_raw = score_samples(obj, X, varargin)
-            yfit_raw = X*obj.B(:) + obj.offset;
-            
-            yfit_raw = yfit_raw(:);
+            yfit_raw = X*obj.B + obj.offset;
         end
         
         % not sure if this is valid for classifiers with scoreFcns. The raw
@@ -35,7 +33,7 @@ classdef (Abstract) linearModelEstimator < modelEstimator
         % Right now I'm just overloading this in modelClf instances that
         % use scoreFcn's and throwing a warning if they're non-trivial
         function yfit_raw = score_null(obj, n)           
-           yfit_raw = obj.offset*ones(n,1); 
+           yfit_raw = repmat(obj.offset,n,1); 
         end
     end
 end

@@ -6,7 +6,7 @@
 % MVPA algorithm, separate from any fmri_data specific operations.
 % They can be linear or nonlinear, and separate abstract classes
 % exist for each.
-classdef (Abstract) modelEstimator < Estimator
+classdef (Abstract) modelEstimator < Estimator & dynamicprops
     methods
         function params = get_params(obj)
             params = obj.hyper_params;
@@ -19,6 +19,12 @@ classdef (Abstract) modelEstimator < Estimator
                 sprintf('%s is not a hyperparameter of %s\n', hyp_name, class(obj)));
 
             obj.(hyp_name) = hyp_val;
+        end
+        
+        % adds hyperparameters dynamically. Useful for multiclass
+        % classifiers
+        function obj = addDynProp(obj, hyp_name)
+            addprop(obj, hyp_name);
         end
     end
 end

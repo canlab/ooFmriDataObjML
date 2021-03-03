@@ -90,22 +90,27 @@ classdef crossValScore < crossValidator & yFit
         function obj = do(obj, dat, Y)
             t0 = tic;
             if obj.repartOnFit || isempty(obj.cvpart)
-                obj.cvpart = obj.cv(dat, Y);
+                try
+                    obj.cvpart = obj.cv(dat, Y);
+                catch
+                    fprintf(2,['Error invoking obj.cv. Often this is due to misspecified ',...
+                        'input or cvpartitioners. Make sure you''re using features ',...
+                        'objects if you need them for passing dependence structures.'])
+                    rethrow(e)
+                end
             end
             
-            % reformat cvpartition and save as a vector of labels as a
-            % convenience
+            % reformat cvpartition and save as a vector of labels. We will
+            % use this later to sort the results we get back from each CV
+            % fold
             obj.fold_lbls = zeros(length(Y),1);
             for i = 1:obj.cvpart.NumTestSets
                 obj.fold_lbls(obj.cvpart.test(i)) = i;
             end
             
-            % make estimator fast, which allows it to assume everyone is in
-            % the same space and use matrix multiplication instead of
-            % apply_mask
-            
             % do coss validation. Dif invocations for parallel vs. serial
-            obj.yfit_raw = zeros(length(Y),1);
+            obj.yfit_raw = [];
+            
             this_foldEstimator = cell(obj.cvpart.NumTestSets,1);
             if obj.n_parallel <= 1            
                 for i = 1:obj.cvpart.NumTestSets
@@ -121,7 +126,7 @@ classdef crossValScore < crossValidator & yFit
                     end
 
                     this_foldEstimator{i} = obj.estimator.fit(train_dat, train_Y);
-                    obj.yfit_raw(obj.fold_lbls == i) = this_foldEstimator{i}.score_samples(test_dat, 'fast', true);
+                    obj.yfit_raw = [obj.yfit_raw; this_foldEstimator{i}.score_samples(test_dat, 'fast', true)];
                 end
             else
                 if ~isempty(gcp('nocreate')), delete(gcp('nocreate')); end
@@ -145,10 +150,13 @@ classdef crossValScore < crossValidator & yFit
                     
                     if obj.verbose, fprintf('Completed fold %d/%d\n', i, obj.cvpart.NumTestSets); end
                 end
-                for i = 1:obj.cvpart.NumTestSets
-                    obj.yfit_raw(obj.fold_lbls == i) = yfit_raw{i};
-                end
+                
+                obj.yfit_raw = cell2mat(yfit_raw{i});
             end
+            
+            [~,I] = sort(obj.fold_lbls);
+            [~,II] = sort(I);
+            obj.yfit_raw = obj.yfit_raw(II,:); 
             
             obj.foldEstimator = this_foldEstimator;
             obj.Y = Y;
@@ -211,11 +219,12 @@ classdef crossValScore < crossValidator & yFit
             
             t0 = tic;
             k = unique(obj.cvpart.NumTestSets);
+            
             obj.scores = zeros(k,1);
             for i = 1:k
                 fold_Y = obj.Y(obj.cvpart.test(i));
                 
-                fold_yfit_raw = obj.yfit_raw(obj.cvpart.test(i));
+                fold_yfit_raw = obj.yfit_raw(obj.cvpart.test(i),:);
                 
                 this_estimator = getBaseEstimator(obj.estimator);
                 if isa(this_estimator, 'modelRegressor')

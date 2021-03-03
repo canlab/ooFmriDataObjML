@@ -1,4 +1,8 @@
-classdef Transformer
+classdef Transformer < handle
+    % handle inheritance is required because pipelines have to inherit both
+    % Transformers and Estimators, and Estimators must be able to have
+    % dynamic properties for multiclass classifiers (which need unique
+    % properties for every classifier instance)
     properties (SetAccess = protected)
         fitTransformTime = -1;
     end

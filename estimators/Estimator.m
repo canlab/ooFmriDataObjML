@@ -1,4 +1,4 @@
-classdef (Abstract) Estimator
+classdef (Abstract) Estimator < handle
     properties (Abstract, Access = ?Estimator)
         hyper_params;
     end
