@@ -173,7 +173,7 @@ classdef crossValScore < crossValidator & yFit
             obj.evalTimeFits = toc(t0);
             obj.is_done = true;
             
-            obj = obj.eval_score();
+            obj.eval_score();
             
             % evaluate scores for each fold separately
             obj.evalTime = obj.evalTimeScorer + obj.evalTimeFits;
@@ -222,7 +222,7 @@ classdef crossValScore < crossValidator & yFit
         end
         
         
-        function obj = eval_score(obj)
+        function eval_score(obj)
             assert(obj.is_done, 'Please run obj.do first');
             
             t0 = tic;
@@ -238,7 +238,7 @@ classdef crossValScore < crossValidator & yFit
                 if isa(this_estimator, 'modelRegressor')
                     fold_yfit = fold_yfit_raw;
                 elseif isa(this_estimator, 'modelClf')
-                    fold_yfit = this_estimator.decisionFcn(fold_yfit_raw);
+                    fold_yfit = this_estimator.decisionFcn(this_estimator,fold_yfit_raw);
                 else
                     error('Unsupported base estimator type');
                 end

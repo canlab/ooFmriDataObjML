@@ -119,7 +119,10 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         % If no underscore is provided, setting is proprogated to all
         % classifiers.
         function obj = multiclassLinearSvmClf(varargin)
-            obj.decisionFcn = @(x1)get_decisionFcn(obj,x1);
+            % this here has a bug. When multiclassLinearSvmClf is updated,
+            % the obj defined here will continue to point to the old (not
+            % copied) obj, not the new copy.
+            obj.decisionFcn = @(x1)get_decisionFcn(obj, x1);
             
             %%
             % pull fitcecoc options
