@@ -176,7 +176,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
             % obj = obj.check_cv_params();
         end
         
-        function obj = fit(obj, X, Y)
+        function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
             
@@ -251,7 +251,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        function obj = set.B(obj, ~)
+        function set.B(obj, ~)
             warning('You shouldn''t be setting B directly. B is part of obj.Mdl. Doing nothing.');
         end
         
@@ -263,11 +263,11 @@ classdef linearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        function obj = set.offset(obj, ~)
+        function set.offset(obj, ~)
             warning('You shouldn''t be setting offset directly. offset is part of obj.Mdl. Doing nothing.');
         end
         
-        function obj = set.learner(obj, val)
+        function set.learner(obj, val)
             if ~strcmp(val, 'svm')
                 error('Only svm Learners are supported by this function');
             end
@@ -287,7 +287,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
             val = obj.fitclinearOpts{learner_idx+1};
         end
         
-        function obj = set.intercept(obj, val)
+        function set.intercept(obj, val)
             bias_idx = find(strcmp(obj.fitclinearOpts, 'FitBias'));
             if isempty(bias_idx)
                 obj.fitclinearOpts = [obj.fitclinearOpts, {'FitBias', val}];
@@ -303,7 +303,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
             val = obj.fitclinearOpts{bias_idx+1};
         end
         
-        function obj = set.lambda(obj, val)
+        function set.lambda(obj, val)
             assert(val >= 0, 'lambda must be greater than 0');
             
             lambda_idx = find(strcmp(obj.fitclinearOpts,'Lambda'));
@@ -326,7 +326,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         end
         
         
-        function obj = set.regularization(obj, val)
+        function set.regularization(obj, val)
             % we cast to char() because bayesOpt will pass character
             % vectors in as type categorical(), which will cause
             % fitclinear to fail.
@@ -359,7 +359,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        function obj = set.scoreFcn(obj, val)
+        function set.scoreFcn(obj, val)
             if ischar(val)
                 switch(val)
                     case 'doublelogit'
@@ -420,7 +420,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         % crossValidator object, since passing a function handle then 
         % allows for cvpartition to be generated on demand based on the
         % particular fold slicing that's received from the crossValidator.
-        function obj = check_cv_params(obj)     
+        function check_cv_params(obj)     
             cv_idx = find(strcmp(obj.fitclinearOpts,'CVPartition'));
             if ~isempty(cv_idx)
                 if isa(obj.fitclinearOpts{cv_idx+1},'function_handle')

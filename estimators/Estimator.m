@@ -1,4 +1,4 @@
-classdef (Abstract) Estimator < handle
+classdef (Abstract) Estimator < handle & matlab.mixin.Copyable
     properties (Abstract, Access = ?Estimator)
         hyper_params;
     end
@@ -25,5 +25,18 @@ classdef (Abstract) Estimator < handle
 
         get_params(obj)
         set_hyp(obj, hyp_name, hyp_val)
+    end
+    
+    methods (Access = protected)
+        function obj = copyElement(obj)
+            obj = copyElement@matlab.mixin.Copyable(obj);
+            
+            fnames = fieldnames(obj);
+            for i = 1:length(fnames)
+                if isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
+                    obj.(fnames{i}) = copy(obj.(fnames{i}));
+                end
+            end
+        end
     end
 end

@@ -80,6 +80,10 @@ classdef crossValScore < crossValidator & yFit
         evalTimeFits = -1;
     end
     
+    properties
+        cvpart = [];
+    end
+    
     methods
         function obj = crossValScore(estimator, cv, scorer, varargin)
             obj@crossValidator(estimator, cv, varargin{:});
@@ -92,10 +96,11 @@ classdef crossValScore < crossValidator & yFit
             if obj.repartOnFit || isempty(obj.cvpart)
                 try
                     obj.cvpart = obj.cv(dat, Y);
-                catch
-                    fprintf(2,['Error invoking obj.cv. Often this is due to misspecified ',...
-                        'input or cvpartitioners. Make sure you''re using features ',...
-                        'objects if you need them for passing dependence structures.'])
+                catch e
+                    e = struct('message', sprintf([e.message, ...
+                        '\nError occurred invoking %s.cv. Often this is due to misspecified ',...
+                        'input or cvpartitioners.\nMake sure you''re using features ',...
+                        'objects if you need them for passing dependence structures.'], class(obj)), 'identifier', e.identifier, 'stack', e.stack);
                     rethrow(e)
                 end
             end
@@ -112,6 +117,9 @@ classdef crossValScore < crossValidator & yFit
             obj.yfit_raw = [];
             
             this_foldEstimator = cell(obj.cvpart.NumTestSets,1);
+            for i = 1:obj.cvpart.NumTestSets
+                this_foldEstimator{i} = copy(obj.estimator);
+            end
             if obj.n_parallel <= 1            
                 for i = 1:obj.cvpart.NumTestSets
                     if obj.verbose, fprintf('Fold %d/%d\n', i, obj.cvpart.NumTestSets); end
@@ -125,7 +133,7 @@ classdef crossValScore < crossValidator & yFit
                         test_dat = dat(obj.cvpart.test(i),:);
                     end
 
-                    this_foldEstimator{i} = obj.estimator.fit(train_dat, train_Y);
+                    this_foldEstimator{i}.fit(train_dat, train_Y);
                     obj.yfit_raw = [obj.yfit_raw; this_foldEstimator{i}.score_samples(test_dat, 'fast', true)];
                 end
             else
@@ -143,7 +151,7 @@ classdef crossValScore < crossValidator & yFit
                         test_dat = dat(obj.cvpart.test(i),:);
                     end
 
-                    this_foldEstimator{i} = obj.estimator.fit(train_dat, train_Y);
+                    this_foldEstimator{i}.fit(train_dat, train_Y);
                     % we can always make certain assumptions about the train and test space
                     % matching which allows us to use the fast option
                     yfit_raw{i} = this_foldEstimator{i}.score_samples(test_dat, 'fast', true)';
@@ -226,7 +234,7 @@ classdef crossValScore < crossValidator & yFit
                 
                 fold_yfit_raw = obj.yfit_raw(obj.cvpart.test(i),:);
                 
-                this_estimator = getBaseEstimator(obj.estimator);
+                this_estimator = getBaseEstimator(obj.foldEstimator{i});
                 if isa(this_estimator, 'modelRegressor')
                     fold_yfit = fold_yfit_raw;
                 elseif isa(this_estimator, 'modelClf')
@@ -244,9 +252,14 @@ classdef crossValScore < crossValidator & yFit
         %% set methods
         % these could be modified to be Dependent properties, and likely 
         % should be 
-        function obj = set_cvpart(obj, cvpart)
-           obj = set_cvpart@crossValPredict(obj,cvpart);
-           
+        function set.cvpart(obj, cvpart)
+           obj.cvpart = cvpart;
+           obj.yfit = [];
+           obj.yfit_null = [];
+           obj.evalTime = -1;
+           obj.fold_lbls = [];
+           obj.is_done = false;
+        
            obj.evalTimeFits = -1;
            obj.evalTimeScorer = -1;
            obj.scores = [];
@@ -264,7 +277,7 @@ classdef crossValScore < crossValidator & yFit
             warning('off','crossValidator:crossValPredict');
             cvPred = crossValPredict(obj);
             warning('on','crossValidator:crossValPredict');
-            cvPred.plot(varargin{:});
+            varargout{:} = cvPred.plot(varargin{:});
             
             this_title = sprintf('Mean score = %0.3f', mean(obj.scores));
             if ~isempty(obj.scores_null)
@@ -273,35 +286,5 @@ classdef crossValScore < crossValidator & yFit
             title(this_title);
         end
     end
-    
-    %{
-    methods (Access = private)
-        % this needs more work to handle linearModeRegressors and
-        % linearModelClf
-        function obj = linearModelConverter(obj, obj_)
-            switch class(obj_)
-                case 'fmriDataPredictor'
-                    obj = obj.linearModelConverter(obj_.estimator);
-                case 'linearModelRegressor'
-                    return
-                otherwise
-                    error('Conversion of %s to %s is not supported', ...
-                        class(obj_), class(obj_.estimator), class(obj));            
-            end
-            
-            % if we get to this point we're good.
-            obj.yfit_raw = obj.yfit;
-
-            for i = 1:obj.cvpart.NumTestSets     
-                fold_yfit = obj.yfit_null(obj.cvpart.test(i));
-                fold_Y = obj.Y(obj.cvpart.test(i));
-
-                yfit = manual_yFit(fold_Y, fold_yfit);
-
-                obj.scores_null(i) = obj.scorer(yfit);
-            end
-        end
-    end
-    %}
 end
     

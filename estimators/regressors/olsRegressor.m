@@ -37,7 +37,7 @@ classdef olsRegressor < linearModelEstimator & modelRegressor
             end
         end
         
-        function obj = fit(obj, X, Y)
+        function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
             

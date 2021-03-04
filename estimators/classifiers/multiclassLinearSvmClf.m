@@ -185,9 +185,10 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
                 for s = 1:length(mdl_params)
                     propname = [mdl_params{s}, '_', int2str(i)];
                     
-                    obj = obj.addDynProp(propname);
+                    obj.addDynProp(propname);
                     this_prop = findprop(obj,propname);
                     this_prop.SetAccess = 'protected'; % this forces us to overload get_params and set_hyper here
+                    this_prop.NonCopyable = false;
                     % we define get and set methods like so (for
                     % example, using lambda_1 as the regularization
                     % parameter for classifier 1),
@@ -271,7 +272,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        function obj = fit(obj, X, Y)
+        function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
                         
@@ -350,7 +351,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        function obj = set.B(obj, ~)
+        function set.B(obj, ~)
             warning('You shouldn''t be setting B directly. B is part of obj.Mdl. Doing nothing.');
         end
         
@@ -363,7 +364,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             val = val(:)';
         end
         
-        function obj = set.offset(obj, ~)
+        function set.offset(obj, ~)
             warning('You shouldn''t be setting offset directly. offset is part of obj.Mdl. Doing nothing.');
         end
         
@@ -375,7 +376,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        function obj = set.classLabels(obj)
+        function set.classLabels(obj)
             error('You shouldn''t be setting classLabels directly. This is set automatically when calling fit.');
         end
         
@@ -388,7 +389,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        function obj = set.codingDesign(obj, val)
+        function set.codingDesign(obj, val)
             val = char(val);
             
             c_idx = find(strcmp(obj.fitcecocOpts,'Coding'));
@@ -399,7 +400,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             obj.fitcecocOpts{c_idx} = val;
         end
         
-        function obj = set.scoreFcn(obj, val)
+        function set.scoreFcn(obj, val)
             if ischar(val)
                 switch(val)
                     case 'doublelogit'
@@ -449,9 +450,9 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         % you want to optimize hyperparameters in a homogeneous way (to
         % reduce the dimensionality of the search space for instance)
         
-        function obj = set.learner(obj, val)
+        function set.learner(obj, val)
             for i = 1:obj.nClf
-                obj = set_learner(obj, val, i);
+                set_learner(obj, val, i);
             end
         end
         
@@ -462,22 +463,22 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        function obj = set.intercept(obj, val)
+        function set.intercept(obj, val)
             for i = 1:obj.nClf
-                obj = set_intercept(obj, val, i);
+                set_intercept(obj, val, i);
             end
         end
         
         function val = get.intercept(obj)
-            val = zeros(1, obj.nClf);
+            val = cell(1, obj.nClf);
             for i = 1:obj.nClf
-                val(i) = get_intercept(obj, i);
+                val{i} = get_intercept(obj, i);
             end
         end
         
-        function obj = set.regularization(obj, val)
+        function set.regularization(obj, val)
             for i = 1:obj.nClf
-                obj = set_regularization(obj, val, i);
+                set_regularization(obj, val, i);
             end
         end
         
@@ -488,16 +489,16 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        function obj = set.lambda(obj, val)
+        function set.lambda(obj, val)
             for i = 1:obj.nClf
-                obj = set_lambda(obj, val, i);
+                set_lambda(obj, val, i);
             end
         end
         
         function val = get.lambda(obj)
-            val = zeros(1, obj.nClf);
+            val = cell(1, obj.nClf);
             for i = 1:obj.nClf
-                val(i) = get_lambda(obj, i);
+                    val{i} = get_lambda(obj, i);
             end
         end
         
@@ -513,7 +514,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         % creating a dependent property method that applies to the
         % properties of a particular classifier.
         
-        function obj = set_learner(obj, val, clfIdx)
+        function set_learner(obj, val, clfIdx)
             val = char(val);
             obj.learnerTemplates{clfIdx}.ModelParams.Learner = val;
         end
@@ -522,7 +523,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             val = obj.learnerTemplates{clfIdx}.ModelParams.Learner;
         end
         
-        function obj = set_intercept(obj, val, clfIdx)
+        function set_intercept(obj, val, clfIdx)
             val = logical(val);
             obj.learnerTemplates{clfIdx}.ModelParams.FitBias = val;
         end
@@ -531,7 +532,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             val = obj.learnerTemplates{clfIdx}.ModelParams.FitBias;
         end
         
-        function obj = set_lambda(obj, val, clfIdx)
+        function set_lambda(obj, val, clfIdx)
             obj.learnerTemplates{clfIdx}.ModelParams.Lambda = val;
         end
         
@@ -539,7 +540,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             val = obj.learnerTemplates{clfIdx}.ModelParams.Lambda;
         end
         
-        function obj = set_regularization(obj, val, clfIdx)           
+        function set_regularization(obj, val, clfIdx)           
             % we cast to char() because bayesOpt will pass character
             % vectors in as type categorical(), which will cause
             % fitcecoc to fail.

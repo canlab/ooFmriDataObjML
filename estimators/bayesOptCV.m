@@ -67,7 +67,7 @@ classdef bayesOptCV < Estimator
     
     methods
         function obj = bayesOptCV(estimator, cv, scorer, bayesOptOpts)
-            obj.estimator = estimator;
+            obj.estimator = copy(estimator);
             if ~isempty(cv), obj.cv = cv; end
 
             if isempty(scorer)
@@ -95,9 +95,9 @@ classdef bayesOptCV < Estimator
             obj.bayesOptOpts = bayesOptOpts;
         end
         
-        function obj = fit(obj, dat, Y, varargin)  
+        function fit(obj, dat, Y, varargin)              
             t0 = tic;
-            % obj = fit(obj, dat, Y) optimizes the hyperparameters of
+            % fit(obj, dat, Y) optimizes the hyperparameters of
             % obj.estimator using data in fmri_data object dat and target vector
             % Y.
             lossFcn = @(hyp)(obj.lossFcn(hyp, dat, Y));
@@ -110,10 +110,10 @@ classdef bayesOptCV < Estimator
                 assert(~isempty(ismember(params, hypname)), ...
                     sprintf('%s is not a valid hyperparameter for %s', hypname, class(obj.estimator)));
                 
-                obj.estimator = obj.estimator.set_hyp(hypname, this_hyp.(hypname));
+                obj.estimator.set_hyp(hypname, this_hyp.(hypname));
             end
             
-            obj.estimator = obj.estimator.fit(dat, Y, varargin{:});
+            obj.estimator.fit(dat, Y, varargin{:});
             obj.fitTime = toc(t0);
         end
         
@@ -133,7 +133,7 @@ classdef bayesOptCV < Estimator
             yfit_null = obj.estimator.predict_null(varargin{:});
         end
         
-        function obj = set_hyp(obj, varargin)
+        function set_hyp(~, varargin)
             warning('bayesOptCV:get_params','This function has no hyperparameters to set. To set hyperparameters of obj.estimator call obj.fit() instead.');
         end
         
@@ -150,14 +150,16 @@ classdef bayesOptCV < Estimator
                 assert(~isempty(ismember(params, hypname)), ...
                     sprintf('%s is not a valid hyperparameter for bayes optimization', hypname));
                 
-                obj.estimator = obj.estimator.set_hyp(hypname, this_hyp.(hypname));
+                obj.estimator.set_hyp(hypname, this_hyp.(hypname));
             end
             
             this_cv = crossValScore(obj.estimator, obj.cv, obj.scorer, 'repartOnFit', true, 'n_parallel', 1, 'verbose', false);
             
             % get associated loss
-            this_cv = this_cv.do(dat, Y);
+            this_cv.do(dat, Y);
             loss = mean(this_cv.scores); % might want to make this flexible (e.g. let user pick median or mode)
+            
+            delete this_cv % not sure if this is needed. Are handles created in this function destroyed implicity after the function exists?
         end 
     end
 end

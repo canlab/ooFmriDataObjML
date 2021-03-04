@@ -13,7 +13,7 @@ classdef (Abstract) modelEstimator < Estimator & dynamicprops
         end
 
         % if an estimator has hyperparameters, this sets them.
-        function obj = set_hyp(obj, hyp_name, hyp_val)
+        function set_hyp(obj, hyp_name, hyp_val)
             params = obj.get_params();
             assert(ismember(hyp_name, params), ...
                 sprintf('%s is not a hyperparameter of %s\n', hyp_name, class(obj)));
@@ -23,7 +23,7 @@ classdef (Abstract) modelEstimator < Estimator & dynamicprops
         
         % adds hyperparameters dynamically. Useful for multiclass
         % classifiers
-        function obj = addDynProp(obj, hyp_name)
+        function addDynProp(obj, hyp_name)
             addprop(obj, hyp_name);
         end
     end

@@ -90,12 +90,14 @@ classdef fmri2VxlFeatTransformer < Transformer
                     switch varargin{i}
                         case 'featureConstructor_funhan'
                             obj.featureConstructor = varargin{i+1};
+                        otherwise
+                            warning('Did not understand input %s to fmri2VxlFeatTransformer', varargin{i});
                     end
                 end
             end
         end
         
-        function obj = fit(obj, dat, varargin)            
+        function fit(obj, dat, varargin)            
             t0 = tic;
             % get prototype image
             % this needs a solution for when image 1 differs in voxel count

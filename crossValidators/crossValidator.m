@@ -1,7 +1,7 @@
 classdef (Abstract) crossValidator < yFit
     properties
         repartOnFit = true;
-        cv = @(dat, Y)cvpartition2(ones(length(dat.Y),1),'KFOLD', 5, 'Stratify', dat.metadata_table.subject_id);
+        cv = @(dat, Y)cvpartition(ones(length(dat.Y),1),'KFOLD', 5);
         n_parallel = 1;
         
         estimator = [];
@@ -9,13 +9,16 @@ classdef (Abstract) crossValidator < yFit
     
     properties (SetAccess = protected)
         fold_lbls = [];
-        cvpart = [];
         foldEstimator = {};
         
         verbose = true;
         
         evalTime = -1;
         is_done = false;
+    end
+    
+    properties (Abstract)
+        cvpart;
     end
     
     methods (Abstract)
@@ -26,7 +29,7 @@ classdef (Abstract) crossValidator < yFit
         function obj = crossValidator(estimator, cv, varargin)            
             assert(isa(estimator,'Estimator'), 'estimator must be type Estimator');
             
-            obj.estimator = estimator;
+            obj.estimator = copy(estimator);
             if ~isempty(cv), obj.cv = cv; end
             
             for i = 1:length(varargin)
@@ -53,39 +56,34 @@ classdef (Abstract) crossValidator < yFit
             assert(isa(cvObj, 'crossValScore'), 'Only convesion of crossValScore to crossValPredict is supported at this time.');
             
             this_baseEstimator = getBaseEstimator(cvObj.estimator);
-            if isa(this_baseEstimator, 'modelRegressor') % scores are predictions, makes things easy
-                obj = crossValPredict(cvObj.estimator, cvObj.cv);
+            if isa(this_baseEstimator, 'modelRegressor')  ||  isa(this_baseEstimator,'modelClf') % scores are predictions, makes things easy
+                obj = crossValPredict(copy(cvObj.estimator), cvObj.cv);
                 
                 fnames_score = fieldnames(cvObj);
                 fnames_predict = fieldnames(obj);
-                for i = 1:length(fnames_predict)
-                    if ismember(fnames_predict{i}, fnames_score)
+                for i = 1:length(fnames_score)
+                    if ismember(fnames_score{i}, fnames_predict)
                         try
-                            obj.(fnames_predict{i}) = cvObj.(fnames_predict{i});
+                            if isa(cvObj.(fnames_score{i}), 'matlab.mixin.Copyable')
+                                obj.(fnames_score{i}) = copy(cvObj.(fnames_score{i}));
+                            else
+                                if isa(cvObj.(fnames_score{i}),'handle')
+                                    warning('Copying obj.%s by reference!', fnames_score{i});
+                                end
+                                obj.(fnames_score{i}) = cvObj.(fnames_score{i});
+                            end
                         catch
-                            warning('Dropping %s.',fnames_predict{i});
+                            warning('Dropping %s.',fnames_score{i});
                         end
                     end
                 end        
                 
-                obj.yfit = obj.yfit_raw;
-            elseif isa(this_baseEstimator,'modelClf')
-                warning('crossValidator:crossValPredict','You will not be able to convert this object back to crossValScore due to information loss');
-                obj = crossValPredict(cvObj.estimator, cvObj.cv);
-                
-                fnames_score = fieldnames(cvObj);
-                fnames_predict = fieldnames(obj);
-                for i = 1:length(fnames_predict)
-                    if ismember(fnames_predict{i}, fnames_score)
-                        try
-                            obj.(fnames_predict{i}) = cvObj.(fnames_predict{i});
-                        catch
-                            warning('Dropping %s.',fnames_predict{i});
-                        end
-                    end
-                end        
-                
-                obj.yfit = this_baseEstimator.decisionFcn(cvObj.yfit_raw);
+                if  isa(this_baseEstimator,'modelClf')
+                    warning('crossValidator:crossValPredict','You will not be able to convert this object back to crossValScore due to information loss');
+                    obj.yfit = this_baseEstimator.decisionFcn(cvObj.yfit_raw);
+                else
+                    obj.yfit = obj.yfit_raw;
+                end
             else 
                 error('Conversion of %s to crossValPredict is not supported', ...
                     class(cvObj));
@@ -98,14 +96,21 @@ classdef (Abstract) crossValidator < yFit
             
             this_baseEstimator = getBaseEstimator(cvObj.estimator);
             if isa(this_baseEstimator, 'modelRegressor')
-                obj = crossValScore(cvObj.estimator, cvObj.cv, scorer);
+                obj = crossValScore(copy(cvObj.estimator), cvObj.cv, scorer);
                 
                 fnames_predict = fieldnames(cvObj);
                 fnames_score = fieldnames(obj);
                 for i = 1:length(fnames_predict)
                     if ismember(fnames_predict{i}, fnames_score)
                         try
-                            obj.(fnames_predict{i}) = cvObj.(fnames_predict{i});
+                            if isa(cvObj.(fnames_predict{i}), 'matlab.mixin.Copyable')
+                                obj.(fnames_predict{i}) = copy(cvObj.(fnames_predict{i}));
+                            else
+                                if isa(cvObj.(fnames_predict{i}),'handle')
+                                    warning('Copying obj.%s by reference!', fnames_predict{i});
+                                end
+                                obj.(fnames_predict{i}) = cvObj.(fnames_predict{i});
+                            end
                         catch
                             warning('Dropping %s.',fnames_predict{i});
                         end
@@ -118,6 +123,21 @@ classdef (Abstract) crossValidator < yFit
             else
                 error('Conversion of %s to crossValPredict is not supported', ...
                     class(cvObj));
+            end
+        end
+    end
+    
+    
+    
+    methods (Access = protected)
+        function obj = copyElement(obj)
+            obj = copyElement@matlab.mixin.Copyable(obj);
+            
+            fnames = fieldnames(obj);
+            for i = 1:length(fnames)
+                if isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
+                    obj.(fnames{i}) = copy(obj.(fnames{i}));
+                end
             end
         end
     end

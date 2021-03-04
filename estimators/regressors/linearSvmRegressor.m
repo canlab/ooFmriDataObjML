@@ -149,10 +149,10 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             end
             
             % see note above check_cv_params definition below
-            % obj = obj.check_cv_params();
+            % obj.check_cv_params();
         end
         
-        function obj = fit(obj, X, Y)
+        function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
             
@@ -206,7 +206,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             end
         end
         
-        function obj = set.B(obj, ~)
+        function set.B(obj, ~)
             warning('You shouldn''t be setting B directly. B is part of obj.Mdl. Doing nothing.');
         end
         
@@ -218,11 +218,11 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             end
         end
         
-        function obj = set.offset(obj, ~)
+        function set.offset(obj, ~)
             warning('You shouldn''t be setting offset directly. offset is part of obj.Mdl. Doing nothing.');
         end
         
-        function obj = set.learner(obj, val)
+        function set.learner(obj, val)
             if ~strcmp(val, 'svm')
                 error('Only svm Learners are supported by this function');
             end
@@ -242,7 +242,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             val = obj.fitrlinearOpts{learner_idx+1};
         end
         
-        function obj = set.intercept(obj, val)
+        function set.intercept(obj, val)
             bias_idx = find(strcmp(obj.fitrlinearOpts, 'FitBias'));
             if isempty(bias_idx)
                 obj.fitrlinearOpts = [obj.fitrlinearOpts, {'FitBias', val}];
@@ -258,7 +258,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             val = obj.fitrlinearOpts{bias_idx+1};
         end
         
-        function obj = set.lambda(obj, val)
+        function set.lambda(obj, val)
             assert(val >= 0, 'lambda must be greater than 0');
             
             lambda_idx = find(strcmp(obj.fitrlinearOpts,'Lambda'));
@@ -283,7 +283,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             end
         end
         
-        function obj = set.epsilon(obj, val)
+        function set.epsilon(obj, val)
             assert(val >= 0, 'epsilon must be greater than 0');
             
             epsilon_idx = find(strcmp(obj.fitrlinearOpts,'Epsilon'));
@@ -303,7 +303,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
             end
         end
         
-        function obj = set.regularization(obj, val)
+        function set.regularization(obj, val)
             % we cast to char() because bayesOpt will pass character
             % vectors in as type categorical(), which will cause
             % fitrlinear to fail.
@@ -355,7 +355,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
         % crossValidator object, since passing a function handle then 
         % allows for cvpartition to be generated on demand based on the
         % particular fold slicing that's received from the crossValidator.
-        function obj = check_cv_params(obj)     
+        function check_cv_params(obj)     
             cv_idx = find(strcmp(obj.fitrlinearOpts,'CVPartition'));
             if ~isempty(cv_idx)
                 if isa(obj.fitrlinearOpts{cv_idx+1},'function_handle')

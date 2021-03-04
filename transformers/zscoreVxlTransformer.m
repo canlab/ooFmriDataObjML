@@ -16,7 +16,7 @@ classdef zscoreVxlTransformer < Transformer
             obj.get_batch_id = batch_id_funhan;
         end
         
-        function obj = fit(obj, varargin)
+        function fit(obj, varargin)
             t0 = tic;
             obj.isFitted = true;
             obj.fitTime = toc(t0);

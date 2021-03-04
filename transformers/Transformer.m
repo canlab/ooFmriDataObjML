@@ -1,4 +1,4 @@
-classdef Transformer < handle
+classdef Transformer < handle & matlab.mixin.Copyable
     % handle inheritance is required because pipelines have to inherit both
     % Transformers and Estimators, and Estimators must be able to have
     % dynamic properties for multiclass classifiers (which need unique
@@ -14,9 +14,9 @@ classdef Transformer < handle
         transform(obj)
     end
     methods
-        function [obj, dat] = fit_transform(obj, varargin)
+        function dat = fit_transform(obj, varargin)
             t0 = tic;
-            obj = obj.fit(varargin{:});
+            obj.fit(varargin{:});
             dat = obj.transform(varargin{:});
             obj.fitTransformTime = toc(t0);
         end
@@ -26,12 +26,25 @@ classdef Transformer < handle
         end
         
         % if a estimator has hyperparameters, this sets them. 
-        function obj = set_hyp(obj, hyp_name, hyp_val)
+        function set_hyp(obj, hyp_name, hyp_val)
             params = obj.get_params();
             assert(ismember(hyp_name, params), ...
                 sprintf('%s is not a hyperparameter of %s\n', hyp_name, class(obj)));
             
             obj.(hyp_name) = hyp_val;
+        end
+    end
+    
+    methods (Access = protected)
+        function obj = copyElement(obj)
+            obj = copyElement@matlab.mixin.Copyable(obj);
+            
+            fnames = fieldnames(obj);
+            for i = 1:length(fnames)
+                if isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
+                    obj.(fnames{i}) = copy(obj.(fnames{i}));
+                end
+            end
         end
     end
 end

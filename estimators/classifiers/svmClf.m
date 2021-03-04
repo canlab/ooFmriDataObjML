@@ -149,11 +149,11 @@ classdef svmClf < modelClf
             end
             
             % see note above check_cv_params definition below
-            % obj = obj.check_cv_params();
+            % obj.check_cv_params();
         end
         
         %% fit method
-        function obj = fit(obj, X, Y)
+        function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
             
@@ -197,7 +197,7 @@ classdef svmClf < modelClf
         
         %% methods for dependent properties   
         
-        function obj = set.nu(obj, val)
+        function set.nu(obj, val)
             assert(val >= 0, 'lambda must be greater than 0');
             
             nu_idx = find(strcmp(obj.fitcsvmOpts,'Nu'));
@@ -219,7 +219,7 @@ classdef svmClf < modelClf
             end
         end
         
-        function obj = set.kernel(obj, val)
+        function set.kernel(obj, val)
             
             k_idx = find(strcmp(obj.fitcsvmOpts, 'KernelFunction'));
             if isempty(k_idx)
@@ -248,7 +248,7 @@ classdef svmClf < modelClf
             end
         end
         
-        function obj = set.kernelScale(obj, val)
+        function set.kernelScale(obj, val)
             k_idx = find(strcmp(obj.fitcsvmOpts, 'KernelScale'));
             if isempty(k_idx)
                 obj.fitcsvmOpts{end+1} = 'KernelScale';
@@ -274,7 +274,7 @@ classdef svmClf < modelClf
         end
         
         
-        function obj = set.order(obj, val)
+        function set.order(obj, val)
             
             p_idx = find(strcmp(obj.fitcsvmOpts, 'PolynomialOrder'));
             if isempty(p_idx) && val > 0
@@ -300,7 +300,7 @@ classdef svmClf < modelClf
             
                 
         
-        function obj = set.scoreFcn(obj, val)
+        function set.scoreFcn(obj, val)
             if ischar(val)
                 switch(val)
                     case 'doublelogit'

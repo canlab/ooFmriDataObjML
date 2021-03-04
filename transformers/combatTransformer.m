@@ -34,7 +34,7 @@ classdef combatTransformer < Transformer
             obj.get_batch_id = batch_id_funhan;
         end
         
-        function obj = fit(obj, dat, varargin)
+        function fit(obj, dat, varargin)
             t0 = tic;
             [~,~,batch_id] = unique(obj.get_batch_id(dat),'stable');
             
@@ -42,7 +42,7 @@ classdef combatTransformer < Transformer
             assert(size(dat.dat,2) == length(batch_id), 'dat be length(bach_id) x m');
             assert(ismatrix(dat.dat));
             
-            obj = obj.pick_ref_batch(dat, batch_id);
+            obj.pick_ref_batch(dat, batch_id);
             [~, grand_mean, var_pooled, B_hat] = evalc(['obj.get_ref_batch_params(',...
                 'dat.dat, batch_id, obj.combat_opts{:}, ''ref'', obj.ref_batch_id)']);
                         
@@ -121,7 +121,7 @@ classdef combatTransformer < Transformer
             cb_dat = dat.get_wh_image(batch_id ~= tmp_ref_id);
         end
         
-        function obj = set_hyp(obj, hyp_name, hyp_val)
+        function set_hyp(obj, hyp_name, hyp_val)
             params = obj.get_params();
             assert(ismember(hyp_name, params), ...
                 sprintf('%s is not a hyperparameter of %s\n', hyp_name, class(obj)));
@@ -134,7 +134,7 @@ classdef combatTransformer < Transformer
     end
         
     methods (Access = private)
-        function obj = pick_ref_batch(obj, dat, batch_id)
+        function pick_ref_batch(obj, dat, batch_id)
             [uniq_batch_id, exp_batch_id] = unique(batch_id,'stable');
 
             % skip picking representative batch if we only have one batch
@@ -249,7 +249,7 @@ classdef combatTransformer < Transformer
                 % true
                 %
                 % ct = combatTransformer2()
-                % [ct, new_ct_dat] = ct.fit_transform(dat); 
+                % new_ct_dat = ct.fit_transform(dat); 
                 % orig_ct_dat = combat(fmri_data.dat, batch_id, design, parametric, 'ref', ct.ref_batch_id)
                 % all(diag(corr(new_ct_dat, orig_ct_dat)))
                 %

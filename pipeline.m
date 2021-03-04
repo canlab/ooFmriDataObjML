@@ -25,14 +25,14 @@ classdef pipeline < Estimator & Transformer
                 assert(isa(steps{i}{2}, 'Transformer'), 'All but last step must be transformers');
                 
                 obj.transformer_names{end+1} = steps{i}{1};
-                obj.transformers{end+1} = steps{i}{2};
+                obj.transformers{end+1} = copy(steps{i}{2});
             end
             if isa(steps{end}{2},'Estimator')
                 obj.estimator_name = steps{end}{1};
-                obj.estimator = steps{end}{2};
+                obj.estimator = copy(steps{end}{2});
             elseif isa(steps{end}{2},'Transformer')
                 obj.transformer_names{end+1} = steps{end}{1};
-                obj.transformers{end+1} = steps{end}{2};
+                obj.transformers{end+1} = copy(steps{end}{2});
             else
                 error('Last step must be a transformer or a estimator');
             end
@@ -66,17 +66,17 @@ classdef pipeline < Estimator & Transformer
         end
         
         % fit all transformers and any estimators
-        function obj = fit(obj, dat, Y)
+        function fit(obj, dat, Y)
             t0 = tic;
             for i = 1:length(obj.transformers)
                 % output from one transformer is input to the next
                 if obj.verbose, fprintf('Fitting %s\n', obj.transformer_names{i}); end
-                [obj.transformers{i}, dat] = obj.transformers{i}.fit_transform(dat);            
+                dat = obj.transformers{i}.fit_transform(dat);            
             end
             if ~isempty(obj.estimator)
                 if obj.verbose, fprintf('Fitting %s\n', obj.estimator_name); end
                 
-                obj.estimator = obj.estimator.fit(dat, Y);
+                obj.estimator.fit(dat, Y);
             end
             
             obj.isFitted = true;
@@ -145,19 +145,19 @@ classdef pipeline < Estimator & Transformer
         % pipeline of pipelines then the residual token could be another
         % parameter of the form class_param, in which case the function
         % recurses.
-        function obj = set_hyp(obj, hyp_name, hyp_val)
+        function set_hyp(obj, hyp_name, hyp_val)
             hyp_name = strsplit(hyp_name,'__');
             for i = 1:length(obj.transformers)
                 if strcmp(hyp_name{1}, obj.transformer_names{i})
                     passThrough = strjoin(hyp_name(2:end),'__');
-                    obj.transformers{i} = obj.transformers{i}.set_hyp(passThrough, hyp_val);
+                    obj.transformers{i}.set_hyp(passThrough, hyp_val);
                     return
                 end
             end
             for i = 1:length(obj.estimator)
                 if strcmp(hyp_name{1}, obj.estimator_name)
                     passThrough = strjoin(hyp_name(2:end),'__');
-                    obj.estimator = obj.estimator.set_hyp(passThrough, hyp_val);
+                    obj.estimator.set_hyp(passThrough, hyp_val);
                     return
                 end
             end
@@ -171,7 +171,7 @@ classdef pipeline < Estimator & Transformer
                 assert(isa(transformers{i}{2}, 'Transformer'), 'All steps must be transformers');
                 
                 obj.transformer_names{end+1} = transformers{i}{1};
-                obj.transformers{end+1} = transformers{i}{2};
+                obj.transformers{end+1} = copy(transformers{i}{2});
             end
             
             obj.isFitted = false;
@@ -181,9 +181,22 @@ classdef pipeline < Estimator & Transformer
             assert(isa(estimator{2}, 'Estimator'), 'estimator must be type Estimator');
 
             obj.estimator_name = estmator{1};
-            obj.estimator = estimator{2};
+            obj.estimator = copy(estimator{2});
             
             obj.isFitted = false;
+        end
+    end
+    
+    methods (Access = protected)
+        function obj = copyElement(obj)
+            obj = copyElement@matlab.mixin.Copyable(obj);
+            
+            fnames = fieldnames(obj);
+            for i = 1:length(fnames)
+                if isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
+                    obj.(fnames{i}) = copy(obj.(fnames{i}));
+                end
+            end
         end
     end
 end

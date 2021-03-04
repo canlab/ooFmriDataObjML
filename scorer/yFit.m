@@ -3,7 +3,7 @@
 % (yfit_raw), depending on the scorer. For instance hinge loss operates on
 % raw scores but f1 is computed based on labels. Regression scorers 
 % operate on yfit, but yfit and yfit_raw should be the same for regression.
-classdef (Abstract) yFit
+classdef (Abstract) yFit < handle & matlab.mixin.Copyable
     properties (SetAccess = protected)
         yfit = [];      % predicted scores or category labels
         yfit_raw = [];  % same as yfit for regression, but raw scores for categorical outcomes

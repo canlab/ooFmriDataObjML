@@ -174,13 +174,13 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
                 obj.lambda = 0;
             end
             
-            obj = obj.check_lasso_params();
+            obj.check_lasso_params();
         end
         
-        function obj = fit(obj, X, Y)
+        function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
-            obj = obj.check_lasso_params();
+            obj.check_lasso_params();
 
             % code below was copied from fmri_data/predict with minor
             % modifications for our different numenclature.
@@ -267,8 +267,8 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
         
         % we need to modify this logic a bit to keep lassoParams in sync 
         % with lassoPcrRegressor hyperparameters 
-        function obj = set_hyp(obj, hyp_name, hyp_val)
-            obj = set_hyp@modelEstimator(obj, hyp_name, hyp_val);
+        function set_hyp(obj, hyp_name, hyp_val)
+            set_hyp@modelEstimator(obj, hyp_name, hyp_val);
             
             % this will adjust lassoParams to match the hyperparameters
             % specified.
@@ -276,14 +276,14 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
             % discrepancy, that's why we're calling this function, to fix 
             % it.
             warning('off','lassoPcrRegressor:param_check');
-            obj = check_lasso_params(obj);
+            check_lasso_params(obj);
             warning('on','lassoPcrRegressor:param_check');
         end       
         
         
         
         
-        function obj = set.alpha(obj, val)
+        function set.alpha(obj, val)
             alpha_idx = find(strcmp(obj.lassoParams,'Alpha'));
             if isempty(alpha_idx)
                 obj.lassoParams = [obj.lassoParams, {'Alpha', val}];
@@ -301,7 +301,7 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
             end
         end
         
-        function obj = set.lambda(obj, val)
+        function set.lambda(obj, val)
             lambda_idx = find(strcmp(obj.lassoParams,'Lambda'));
             if isempty(lambda_idx)
                 obj.lassoParams = [obj.lassoParams, {'Lambda', val}];
@@ -329,7 +329,7 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
         % crossValidator object, since passing a function handle then 
         % allows for cvpartition to be generated on demand based on the
         % particular fold slicing that's received from the crossValidator.
-        function obj = check_lasso_params(obj)     
+        function check_lasso_params(obj)     
             cv_idx = find(strcmp(obj.lassoParams,'CV'));
             if ~isempty(cv_idx)
                 if isa(obj.lassoParams{cv_idx+1},'function_handle')

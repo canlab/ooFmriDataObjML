@@ -43,11 +43,22 @@
 %
 
 classdef crossValPredict < crossValidator & yFit   
+    properties
+        cvpart = [];
+    end
     methods        
         function obj = do(obj, dat, Y)
             t0 = tic;
             if obj.repartOnFit || isempty(obj.cvpart)
-                obj.cvpart = obj.cv(dat, Y);
+                try
+                    obj.cvpart = obj.cv(dat, Y);
+                catch e
+                    e = struct('message', sprintf([e.message, ...
+                        '\nError occurred invoking %s.cv. Often this is due to misspecified ',...
+                        'input or cvpartitioners.\nMake sure you''re using features ',...
+                        'objects if you need them for passing dependence structures.'], class(obj)), 'identifier', e.identifier, 'stack', e.stack);
+                    rethrow(e)
+                end
             end
             
             % reformat cvpartition and save as a vector of labels as a
@@ -64,6 +75,9 @@ classdef crossValPredict < crossValidator & yFit
             % do coss validation. Dif invocations for parallel vs. serial
             obj.yfit = zeros(length(Y),1);
             this_foldEstimator = cell(obj.cvpart.NumTestSets,1);
+            for i = 1:obj.cvpart.NumTestSets
+                this_foldEstimator{i} = copy(obj.estimator);
+            end
             if obj.n_parallel <= 1            
                 for i = 1:obj.cvpart.NumTestSets
                     if obj.verbose, fprintf('Fold %d/%d\n', i, obj.cvpart.NumTestSets); end
@@ -77,7 +91,7 @@ classdef crossValPredict < crossValidator & yFit
                         test_dat = dat(obj.cvpart.test(i),:);
                     end
 
-                    this_foldEstimator{i} = obj.estimator.fit(train_dat, train_Y);
+                    this_foldEstimator{i}.fit(train_dat, train_Y);
                     obj.yfit(obj.fold_lbls == i) = this_foldEstimator{i}.predict(test_dat, 'fast', true);
                 end
             else
@@ -95,7 +109,7 @@ classdef crossValPredict < crossValidator & yFit
                         test_dat = dat(obj.cvpart.test(i),:);
                     end
 
-                    this_foldEstimator{i} = obj.estimator.fit(train_dat, train_Y);
+                    this_foldEstimator{i}.fit(train_dat, train_Y);
                     % we can always make certain assumptions about the train and test space
                     % matching which allows us to use the fast option
                     yfit{i} = this_foldEstimator{i}.predict(test_dat, 'fast', true)';
@@ -139,7 +153,7 @@ classdef crossValPredict < crossValidator & yFit
             end
         end
         
-        function obj = set_cvpart(obj, cvpart)
+        function set.cvpart(obj, cvpart)
            obj.cvpart = cvpart;
            obj.yfit = [];
            obj.yfit_null = [];
@@ -153,6 +167,7 @@ classdef crossValPredict < crossValidator & yFit
         end
         
         function varargout = plot(obj, varargin)
+            figure;
             varargout{:} = plot(obj.Y, obj.yfit, '.', varargin{:});
             xlabel('Observed')
             ylabel(sprintf('Predicted (%d-fold CV)',obj.cvpart.NumTestSets))
