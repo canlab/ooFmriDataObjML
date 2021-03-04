@@ -2,10 +2,10 @@
 function err = get_f1(yFitObj)
     assert(isa(yFitObj,'yFit'),'get_f1() takes only yFit objects as input');
 
-    true_positive = yFitObj.Y.*yFitObj.yfit;
-    precision = sum(true_positive)/sum(yFitObj.yfit);
+    true_positive = (yFitObj.Y == 1).*(yFitObj.yfit == 1);
+    precision = sum(true_positive)/sum(yFitObj.yfit == 1);
     
-    recall = sum(true_positive)/sum(logical(yFitObj.Y)); % also known as the true positive rate
+    recall = sum(true_positive)/length(yFitObj.Y); % also known as the true positive rate
     
     f1 = 2 * precision * recall / (precision + recall);
     
