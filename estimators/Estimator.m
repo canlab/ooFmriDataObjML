@@ -35,6 +35,14 @@ classdef (Abstract) Estimator < handle & matlab.mixin.Copyable
             for i = 1:length(fnames)
                 if isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
                     obj.(fnames{i}) = copy(obj.(fnames{i}));
+                elseif isa(obj.(fnames{i}), 'handle') % implicitly: & ~isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
+                    % the issue here is that fuction handles that are
+                    % copied can contain references to the object they
+                    % belong to, but these references will continue to
+                    % point to the original object, and not the copy
+                    % becaues matlab cannot parse these function handles
+                    % appropriately.
+                    warning('%s.%s is a handle but not copyable. This can lead to unepected behavior and is not ideal', class(obj), fnames{i});
                 end
             end
         end

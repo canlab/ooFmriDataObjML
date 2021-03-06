@@ -122,7 +122,7 @@ classdef bayesOptCV < Estimator
         end
         
         function yfit_null = score_null(obj, varargin)
-            yfit_null = obj.estimator.predict_null(varargin{:});
+            yfit_null = obj.estimator.score_null(varargin{:});
         end
         
         function yfit = predict(obj, varargin)
@@ -159,7 +159,7 @@ classdef bayesOptCV < Estimator
             this_cv.do(dat, Y);
             loss = mean(this_cv.scores); % might want to make this flexible (e.g. let user pick median or mode)
             
-            delete this_cv % not sure if this is needed. Are handles created in this function destroyed implicity after the function exists?
+            delete(this_cv) % not sure if this is needed. Are handles created in this function destroyed implicity after the function exists?
         end 
     end
 end

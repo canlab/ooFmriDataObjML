@@ -9,7 +9,7 @@ classdef (Abstract) yFit < handle & matlab.mixin.Copyable
         yfit_raw = [];  % same as yfit for regression, but raw scores for categorical outcomes
         yfit_null = [];
         
-        Y = [];        
+        Y = [];
     end
     
     % needs methods to ensure yfit and yfit_null can be fit Needs

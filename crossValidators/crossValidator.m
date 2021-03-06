@@ -55,39 +55,50 @@ classdef (Abstract) crossValidator < yFit
         function obj = crossValPredict(cvObj)
             assert(isa(cvObj, 'crossValScore'), 'Only convesion of crossValScore to crossValPredict is supported at this time.');
             
-            this_baseEstimator = getBaseEstimator(cvObj.estimator);
-            if isa(this_baseEstimator, 'modelRegressor')  ||  isa(this_baseEstimator,'modelClf') % scores are predictions, makes things easy
-                obj = crossValPredict(copy(cvObj.estimator), cvObj.cv);
-                
-                fnames_score = fieldnames(cvObj);
-                fnames_predict = fieldnames(obj);
-                for i = 1:length(fnames_score)
-                    if ismember(fnames_score{i}, fnames_predict)
-                        try
-                            if isa(cvObj.(fnames_score{i}), 'matlab.mixin.Copyable')
-                                obj.(fnames_score{i}) = copy(cvObj.(fnames_score{i}));
-                            else
-                                if isa(cvObj.(fnames_score{i}),'handle')
-                                    warning('Copying obj.%s by reference!', fnames_score{i});
-                                end
-                                obj.(fnames_score{i}) = cvObj.(fnames_score{i});
+            obj = crossValPredict(copy(cvObj.estimator), cvObj.cv); 
+
+            fnames_score = fieldnames(cvObj);
+            fnames_predict = fieldnames(obj);
+            for i = 1:length(fnames_score)
+                if ismember(fnames_score{i}, fnames_predict)
+                    try
+                        if isa(cvObj.(fnames_score{i}), 'matlab.mixin.Copyable')
+                            obj.(fnames_score{i}) = copy(cvObj.(fnames_score{i}));
+                        else
+                            if isa(cvObj.(fnames_score{i}),'handle')
+                                warning('Copying obj.%s by reference!', fnames_score{i});
                             end
-                        catch
-                            warning('Dropping %s.',fnames_score{i});
+                            obj.(fnames_score{i}) = cvObj.(fnames_score{i});
                         end
+                    catch
+                        warning('Dropping %s.',fnames_score{i});
                     end
-                end        
-                
+                end
+            end
+
+            % conversion to crossValPredict must be done on a fold by fold
+            % basis to handle conversion of classification scores, but
+            % we'll do it for both for consistency
+            obj.yfit = [];
+            for i = 1:cvObj.cvpart.NumTestSets
+                fold_idx = cvObj.cvpart.test(i);
+                this_baseEstimator = getBaseEstimator(cvObj.foldEstimator{i});
                 if  isa(this_baseEstimator,'modelClf')
                     warning('crossValidator:crossValPredict','You will not be able to convert this object back to crossValScore due to information loss');
-                    obj.yfit = this_baseEstimator.decisionFcn(cvObj.yfit_raw);
+                    obj.yfit = [obj.yfit; this_baseEstimator.decisionFcn(cvObj.yfit_raw(fold_idx,:))];
+                elseif isa(this_baseEstimator, 'modelRegressor')
+                    obj.yfit = [obj.yfit; obj.yfit_raw(fold_idx)];
                 else
-                    obj.yfit = obj.yfit_raw;
+                    error('Conversion of %s to crossValPredict is not supported', ...
+                        class(cvObj));
                 end
-            else 
-                error('Conversion of %s to crossValPredict is not supported', ...
-                    class(cvObj));
             end
+            
+            % yfit is currently sorted by fold, let's fix that by figuring
+            % out what the fold sorting is and reversing it.
+            [~,I] = sort(obj.fold_lbls);
+            [~,II] = sort(I);
+            obj.yfit = obj.yfit(II);
         end
         
         

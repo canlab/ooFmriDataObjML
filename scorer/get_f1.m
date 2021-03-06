@@ -5,7 +5,7 @@ function err = get_f1(yFitObj)
     true_positive = (yFitObj.Y == 1).*(yFitObj.yfit == 1);
     precision = sum(true_positive)/sum(yFitObj.yfit == 1);
     
-    recall = sum(true_positive)/length(yFitObj.Y); % also known as the true positive rate
+    recall = sum(true_positive)/sum(yFitObj.Y == 1); % also known as the true positive rate
     
     f1 = 2 * precision * recall / (precision + recall);
     

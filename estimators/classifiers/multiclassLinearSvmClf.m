@@ -90,14 +90,6 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         
         % CV_funhan = [];
         
-        % this is a hacky way of implementing a ternary operator.
-        % 1     if x1 true
-        % -1    if x1 false
-        % I've made attempts to keep methods robust with respect to [0,1]
-        % or [-1,1] coding, but just in case we're going to try to use
-        % [-1,1] which is standard for SVMs.
-        decisionFcn = [];
-        
         Mdl = [];
         learnerTemplates = {};
         
@@ -118,12 +110,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         % arguments. Individual classifiers are indicated via underscores.
         % If no underscore is provided, setting is proprogated to all
         % classifiers.
-        function obj = multiclassLinearSvmClf(varargin)
-            % this here has a bug. When multiclassLinearSvmClf is updated,
-            % the obj defined here will continue to point to the old (not
-            % copied) obj, not the new copy.
-            obj.decisionFcn = @(x1)get_decisionFcn(obj, x1);
-            
+        function obj = multiclassLinearSvmClf(varargin)            
             %%
             % pull fitcecoc options
             fitcecocOpts_idx = find(strcmp(varargin,'fitcecocOpts'));
@@ -154,7 +141,11 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             if obj.NClasses > 2
                 switch(obj.codingDesign)
                     case 'onevsall'
-                        obj.nClf = obj.NClasses;
+                        if obj.NClasses == 2
+                            obj.nClf = 1;
+                        else
+                            obj.nClf = obj.NClasses;
+                        end
                     case 'onevsone' % not implemented yet.
                         obj.nClf = obj.NClasses*(obj.NClasses - 1);
                     otherwise
@@ -278,27 +269,21 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
-                        
-            if isa(obj.classLabels,'cell')
-                assert(ischar(obj.classLabels{1}),'Class labels must be numeric or character vectors');
-                
-                comparisonOp = @(x1,x2)(strcmp(x1,x2));
-            elseif isnumeric(obj.classLabels)
-                comparisonOp = @(x1,x2)(x1 == x2);
-            else
-                error('Class labels must be numeric or character vectors');
+            if ~iscategorical(Y)
+                warning('Expected categorical class labels but recieved %s. Attempting naive conversion.', class(Y));
             end
-            
+                                    
             for i = 1:obj.nClf
-                obj.Mdl = fitcecoc(double(X),Y, obj.fitcecocOpts{:});
+                obj.Mdl = fitcecoc(double(X), Y, obj.fitcecocOpts{:});
 
                 if isa(obj.Mdl,'ClassificationPartitionedLinear')
                     error('multiclassLinearSvmClf does not support using fitcecoc''s internal cross validation. Please wrap multiclassLinearSvmClf in a crossValScore() object instead.');
                 end
 
-                %{
-                obj.prior = sum(obj.decisionFcn(Y) == 1)/length(Y);
-                %}
+                obj.prior = zeros(size(obj.classLabels));
+                for i = 1:length(obj.classLabels)
+                    obj.prior(i) = sum(categorical(Y) == categorical(obj.classLabels(i)))/length(Y);
+                end
             end
             
             obj.isFitted = true;
@@ -310,8 +295,8 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             yfit_raw = obj.scoreFcn(yfit_raw);
         end        
          
-        function yfit_raw = score_null(varargin)
-            yfit_raw = score_null@linearModelEstimator(obj,X);
+        function yfit_raw = score_null(obj, n)
+            yfit_raw = score_null@linearModelEstimator(obj,n);
             yfit_raw = obj.scoreFcn(yfit_raw);
             
             st_idx = find(strcmp(obj.fitcecocOpts, 'ScoreTransform'));
@@ -321,10 +306,10 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         end
         
         
-        function labels = get_decisionFcn(obj, scores)
+        function labels = decisionFcn(obj, scores)
             K = size(obj.Mdl.CodingMatrix,1);
             J = size(obj.Mdl.CodingMatrix,2);
-            assert(J == obj.nClf,'Looks like the decisionFcn definition was misunderstood... Please review https://www.mathworks.com/help/stats/classificationecoc.predict.html#bufel6__sep_sharedBinaryLoss and fix this');
+            assert(J == obj.nClf,'Looks like NClasses was misspecified or the decisionFcn definition was misunderstood... Please review https://www.mathworks.com/help/stats/classificationecoc.predict.html#bufel6__sep_sharedBinaryLoss and fix this');
             
             n = size(scores,1);
             loss = zeros(n,K);
@@ -379,7 +364,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        function set.classLabels(obj)
+        function set.classLabels(~, ~)
             error('You shouldn''t be setting classLabels directly. This is set automatically when calling fit.');
         end
         

@@ -14,5 +14,7 @@ classdef manual_yFit < yFit
         function set_null(obj, null_yfit)
             obj.yfit_null = null_yfit;
         end
+        
+        
     end
 end

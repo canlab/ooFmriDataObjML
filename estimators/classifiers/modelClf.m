@@ -1,7 +1,4 @@
 classdef (Abstract) modelClf < modelEstimator
-    properties (SetAccess = private, Abstract)        
-        decisionFcn; % used to convert raw scors to category labels
-    end
     
     properties (SetAccess = protected)
         % estimated probability of positive class label during model fit,
@@ -11,6 +8,29 @@ classdef (Abstract) modelClf < modelEstimator
         % something like,
         %   yfit_null = rand(n,1) < scoreFcn(obj.offset)
         prior;
+    end
+    
+    properties (Abstract, SetAccess = private)
+        classLabels;
+    end
+    
+    %{
+    properties (SetAccess  = protected)
+         % Multiclass classification requires a coding design
+         % specification, but for binary classifiers this is the implicit
+         % default. See fitcecoc help for details on Coding Designs.
+         codingDesign = [-1;1];
+    end
+    %}
+    
+    methods (Abstract)
+        % a decision function that converts scores into class labels.
+        % Typically scores > 0 might do, but for SVM we need -1/1 labels
+        % for instance, while for multiclass classification we need
+        % something more complex that combines the conclusions of all
+        % constituent binary classifiers. We define this as abstract to
+        % force the user to implement something intelligent.
+        decisionFcn(obj, scores);
     end
     
     methods
@@ -23,15 +43,33 @@ classdef (Abstract) modelClf < modelEstimator
         % training data (it's null w.r.t. X, not Y). Note this is
         % independent of scores or decision functions.
         function yfit_null = predict_null(obj, n)
-            yfit_null = zeros(n,1);
-            n_pos = round(n*obj.prior);
+            n_pos = floor(n*obj.prior);
             
-            % This could also be achieved with rand(n,1) < obj.prior, but
-            % class incidence wouldn't be deterministic. The way we do this
-            % below, class incidence is deterministic and only the
-            % particular labeling order is random.
-            yfit_null(1:n_pos) = 1;
-            yfit_null(n_pos+1:end) = -1;
+            yfit_null = [];
+            for i = 1:length(obj.classLabels)
+                yfit_null = [yfit_null; repmat(obj.classLabels(i), n_pos(i), 1)];
+            end
+            if length(yfit_null) < n % deal with rounding errors
+                missing = n - length(yfit_null);
+                
+                % get random entries to padd the results
+                u = rand(missing,1) ;
+                % convert ressultant random [0,1] values 
+                % into labels using intervals on the uniform 
+                % distribution to model priors likelihoods for each 
+                % label
+                r = u < cumsum(obj.prior(:))';
+                label = [~any(diff(r, [], 2),2), diff(r, [], 2)];
+                
+                % convert indexed matrix into corresponding labels
+                [a,b] = find(label);
+                [~,I] = sort(a);
+                label_idx = b(I);
+                
+                yfit_null = [yfit_null; obj.classLabels(label_idx)];
+            end
+                
+            % shuffle the labels    
             yfit_null = yfit_null(randperm(n));
         end
     end

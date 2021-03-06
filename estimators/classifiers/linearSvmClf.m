@@ -67,6 +67,9 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         
         B;
         offset;
+        
+        classLabels;
+        misclfCost;
     end
     
     properties (Access = private, Hidden)
@@ -84,14 +87,6 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         fitTime = -1;
         
         % CV_funhan = [];
-        
-        % this is a hacky way of implementing a ternary operator.
-        % 1     if x1 true
-        % -1    if x1 false
-        % I've made attempts to keep methods robust with respect to [0,1]
-        % or [-1,1] coding, but just in case we're going to try to use
-        % [-1,1] which is standard for SVMs.
-        decisionFcn = @(x1)subsref([-1; 1], substruct('()', {(x1 > 0) + 1}));
         
         Mdl = [];
     end
@@ -179,6 +174,12 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
+            %{
+            if ~iscategorical(Y)
+                warning('Expected categorical class labels but recieved %s. Attempting naive conversion.', class(Y));
+            end
+            %}
+            assert(all(ismember(Y,[-1,1])), 'Binary classifiers must have [-1,1] target inputs');
             
             if ~isempty(obj.C) % if C parameter is in use, set lambda accordingly
                 % setting lambda erases C (since outside of this specific
@@ -189,50 +190,38 @@ classdef linearSvmClf < linearModelEstimator & modelClf
                 obj.C = C;
             end
             
-            % see comment above check_cv_params() definition regarding this
-            % code.
-            %{
-            % make a copy and convert cvpartition generator to cvpartition
-            % class instance here (this does the actual partitioning). We
-            % do this because we (a) don't want to directly overwrite
-            % what's in obj.ficlinearOpts and (b) can't pass generators to
-            % our fitclinear invocation below, so we make a new variable
-            % where we can replace the generator with a cvpartition object
-            % and pass that instead.
-            fitclinearOpts = obj.fitclinearOpts;
-            if ~isempty(obj.CV_funhan)
-                cvpart = obj.CV_funhan(X,Y);
-                cv_idx = find(strcmp(fitclinearOpts,'CVPartition'));
-                
-                % do a sanity check. We get the function handle from the
-                % 'CV' argument whenever check_lasso_params() is called, so
-                % if we have one but not the other something very strange
-                % is happening.
-                assert(~isempty(cv_idx), 'CV function handle was found, but no ''CVPartition'' parameter was found in fitclinearOpts. Something is wrong.');
-                fitclinearOpts{cv_idx+1} = cvpart;
-            end
-            
-            Mdl = fitclinear(double(X),Y, fitclinearOpts{:});
-            %}
             obj.Mdl = fitclinear(double(X),Y, obj.fitclinearOpts{:});
             
             if isa(obj.Mdl,'ClassificationPartitionedLinear')
                 error('linearSvmClf does not support using fitclinear''s internal cross validation. Please wrap linearSvmClf in a crossValScore() object instead.');
             end
-            
-            obj.prior = sum(obj.decisionFcn(Y) == 1)/length(Y);
-            
+
+            obj.prior = zeros(size(obj.classLabels));
+            for i = 1:length(obj.classLabels)
+                obj.prior(i) = sum(categorical(Y) == categorical(obj.classLabels(i)))/length(Y);
+            end
+                
             obj.isFitted = true;
             obj.fitTime = toc(t0);
         end
                 
         function yfit_raw = score_samples(obj, X, varargin)
             yfit_raw = score_samples@linearModelEstimator(obj,X);
+            
+            % there are implicitly two classifiers. This will return scores
+            % on each. Column 1 gives scores on obj.classLabels(1) and
+            % column 2 gives scores on obj.classLabels(2);
+            %yfit_raw = obj.scoreFcn(yfit_raw(:))*[-1,1];
             yfit_raw = obj.scoreFcn(yfit_raw(:));
         end        
          
-        function yfit_raw = score_null(varargin)
-            yfit_raw = score_null@linearModelEstimator(varargin{:});
+        function yfit_raw = score_null(obj, varargin)
+            yfit_raw = score_null@linearModelEstimator(obj, varargin{:});
+            
+            % there are implicitly two classifiers. This will return scores
+            % on each. Column 1 gives scores on obj.classLabels(1) and
+            % column 2 gives scores on obj.classLabels(2);
+            % yfit_raw = obj.scoreFcn(yfit_raw(:))*[-1,1];
             yfit_raw = obj.scoreFcn(yfit_raw(:));
             
             st_idx = find(strcmp(obj.fitclinearOpts, 'ScoreTransform'));
@@ -241,7 +230,35 @@ classdef linearSvmClf < linearModelEstimator & modelClf
             end
         end
         
-        %% methods for dependent properties
+        function d = decisionFcn(obj, scores)
+            %{
+            assert(size(scores,2) == 2, sprintf('Expected 2 scores but recieved %d scores per prediction.', size(scores,2)));
+            
+            maxScore = scores == max(scores,[],2);
+            [a,b] = find(maxScore);
+            [~,I] = sort(a);
+            maxScore = b(I);
+            
+            d = obj.classLabels(maxScore);
+            %}
+            d = zeros(length(scores),1);
+            d(scores <= 0) = obj.classLabels(1);
+            d(scores > 0) = obj.classLabels(2);
+        end
+        
+       %% methods for dependent properties
+        
+        function val = get.classLabels(obj)
+            if isempty(obj.Mdl)
+                val = [];
+            else
+                val = obj.Mdl.ClassNames;
+            end
+        end
+        
+        function set.classLabels(~, ~)
+            error('You shouldn''t be setting classLabels directly. This is set automatically when calling fit.');
+        end
         
         function val = get.B(obj)
             if isempty(obj.Mdl)

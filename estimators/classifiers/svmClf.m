@@ -64,16 +64,6 @@ classdef svmClf < modelClf
         isFitted = false;
         fitTime = -1;
         
-        % CV_funhan = [];
-        
-        % this is a hacky way of implementing a ternary operator.
-        % 1     if x1 true
-        % -1    if x1 false
-        % I've made attempts to keep methods robust with respect to [0,1]
-        % or [-1,1] coding, but just in case we're going to try to use
-        % [-1,1] which is standard for SVMs.
-        decisionFcn = @(x1)subsref([-1; 1], substruct('()', {(x1 > 0) + 1}));
-        
         Mdl = [];
     end
     
@@ -193,6 +183,12 @@ classdef svmClf < modelClf
         function yfit = predict(obj, X)
             yfit = obj.Mdl.predict(double(X));
             yfit(yfit == 0) = -1;
+        end
+        
+        function d = decisionFcn(~, scores)
+            d = zeros(size(scores));
+            d(scores > 0) = 1;
+            d(scores <=0) = -1;
         end
         
         %% methods for dependent properties   
