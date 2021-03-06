@@ -167,12 +167,51 @@ classdef crossValPredict < crossValidator & yFit
         end
         
         function varargout = plot(obj, varargin)
-            figure;
-            varargout{:} = plot(obj.Y, obj.yfit, '.', varargin{:});
-            xlabel('Observed')
-            ylabel(sprintf('Predicted (%d-fold CV)',obj.cvpart.NumTestSets))
-            lsline;
+            try
+                figure;
+                if isa(getBaseEstimator(obj.estimator), 'modelClf')
+                    [uniq_val,~,numericData] = unique([obj.yfit; obj.Y]);
+                    values = min(numericData):max(numericData);
+
+                    cfmat = confusionmat(obj.Y, obj.yfit);
+
+                    uniq_val = cellstr(categorical(uniq_val));
+                    uniq_val = strrep(uniq_val,'_','');
+                    
+                    [uniq_val_pred, uniq_val_obs] = deal(cell(size(uniq_val)));
+                    for i = 1:length(uniq_val)
+                        uniq_val_pred{i} = [uniq_val{i}, ' ', sprintf('%0.3f',sum(cfmat(:,i))./sum(cfmat(:)))];
+                        uniq_val_obs{i} = [uniq_val{i}, ' ', sprintf('%0.3f',sum(cfmat(i,:),2)./sum(cfmat(:)))];
+                    end
+
+                    varargout{:} = imagesc(cfmat, varargin{:});
+                    set(gca,'YTickLabel',uniq_val_pred,'YTick',values,...
+                        'XTickLabel', uniq_val_obs,'XTick',values, ...
+                        'XTickLabelRotation', 90)
+                    for i = 1:length(uniq_val)
+                        for j = 1:length(uniq_val)
+                            text(i,j,sprintf('%0.3f',cfmat(i,j)/sum(cfmat(:))));
+                        end
+                    end
+                    title('Classifier Confusion Matrix');
+
+                elseif isa(getBaseEstimator(obj), 'modelRegressor')
+                    title('Regressor Performance');
+                    varargout{:} = plot(obj.Y, obj.yfit, '.', varargin{:});
+                    lsline
+                else
+                    error('Plotting is only supported for modelClf and modelRegressor type base estimators.');
+                end
+
+                xlabel('Observed')
+                ylabel(sprintf('Predicted (%d-fold CV)',obj.cvpart.NumTestSets))
+            
+            catch e
+                delete(gcf)
+                rethrow(e)
+            end
         end
+                
     end
 end
     
