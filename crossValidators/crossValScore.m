@@ -180,6 +180,8 @@ classdef crossValScore < crossValidator & yFit
         end
         
         function obj = do_null(obj, varargin)
+            assert(obj.is_done, 'Please run obj.do() first.');
+            
             if isempty(obj.cvpart)
                 obj.cvpart = obj.cv(varargin{:});
                 warning('cvpart not found. null predictions are not valid for yfit obtained with subsequent do() invocations');
@@ -196,23 +198,27 @@ classdef crossValScore < crossValidator & yFit
                 Y = obj.Y;
             end
             
-            yfit_raw = zeros(length(Y),1);
-            obj.yfit_null = zeros(length(Y),1);
+            yfit_raw = [];
+            yfit_null = [];
             
             for i = 1:obj.cvpart.NumTestSets                
-                yfit_raw(obj.cvpart.test(i)) = ...
-                    obj.foldEstimator{i}.score_null(obj.cvpart.TestSize(i));
+                yfit_raw = [yfit_raw; ...
+                    obj.foldEstimator{i}.score_null(sum(obj.cvpart.TestSize(i)))];
                 
-                obj.yfit_null(obj.cvpart.test(i)) = ...
-                    obj.foldEstimator{i}.predict_null(obj.cvpart.TestSize(i));
+                yfit_null = [yfit_null; ...
+                    obj.foldEstimator{i}.predict_null(sum(obj.cvpart.TestSize(i)))];
             end
+            [~,I] = sort(obj.fold_lbls);
+            [~,II] = sort(I);
+            yfit_raw = yfit_raw(II,:);
+            obj.yfit_null = yfit_null(II);
             
             k = unique(obj.cvpart.NumTestSets);
             obj.scores_null = zeros(k,1);
             for i = 1:k
                 fold_Y = obj.Y(obj.cvpart.test(i));
                 
-                fold_yfit_raw = yfit_raw(obj.cvpart.test(i));
+                fold_yfit_raw = yfit_raw(obj.cvpart.test(i),:);
                 fold_yfit = obj.yfit_null(obj.cvpart.test(i));
                 
                 yfit = manual_yFit(fold_Y, fold_yfit, fold_yfit_raw);
@@ -238,10 +244,11 @@ classdef crossValScore < crossValidator & yFit
                 if isa(this_estimator, 'modelRegressor')
                     fold_yfit = fold_yfit_raw;
                 elseif isa(this_estimator, 'modelClf')
-                    fold_yfit = this_estimator.decisionFcn(this_estimator,fold_yfit_raw);
+                    fold_yfit = this_estimator.decisionFcn(fold_yfit_raw);
                 else
                     error('Unsupported base estimator type');
                 end
+                
                 yfit = manual_yFit(fold_Y, fold_yfit, fold_yfit_raw);
                 
                 obj.scores(i) = obj.scorer(yfit);
