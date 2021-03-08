@@ -260,6 +260,7 @@ classdef crossValScore < crossValidator & yFit
             for i = 1:obj.cvpart.NumTestSets                
                 tmp_yfit_raw = obj.foldEstimator{i}.score_null(sum(obj.cvpart.TestSize(i)));
                 
+                %{
                 % any score_samples columns will need to be resorted to
                 % match classLabels here since they may differ across
                 % foldEstimators.
@@ -277,6 +278,7 @@ classdef crossValScore < crossValidator & yFit
                             tmp_yfit_raw = tmp_yfit_raw(:, resortIdx);
                         end
                 end
+                %}
                 
                 fold_yfit_raw = tmp_yfit_raw;
                 fold_yfit_null = obj.foldEstimator{i}.predict_null(sum(obj.cvpart.TestSize(i)));
