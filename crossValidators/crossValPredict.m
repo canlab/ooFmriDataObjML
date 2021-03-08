@@ -43,9 +43,14 @@
 %
 
 classdef crossValPredict < crossValidator & yFit   
-    properties
-        cvpart = [];
+    properties (Dependent = true)
+        cvpart;
     end
+    
+    properties (Hidden = true, Access = private)
+        cvpart0 = [];
+    end
+    
     methods        
         function obj = do(obj, dat, Y)
             t0 = tic;
@@ -67,13 +72,11 @@ classdef crossValPredict < crossValidator & yFit
             for i = 1:obj.cvpart.NumTestSets
                 obj.fold_lbls(obj.cvpart.test(i)) = i;
             end
-            
-            % make estimator fast, which allows it to assume everyone is in
-            % the same space and use matrix multiplication instead of
-            % apply_mask
-            
+                        
             % do coss validation. Dif invocations for parallel vs. serial
-            obj.yfit = zeros(length(Y),1);
+            obj.Y = Y;
+            obj.yfit = eval(sprintf('%s.empty(%d,0)',class(Y),length(Y))); % create empty array of same class as Y
+            
             this_foldEstimator = cell(obj.cvpart.NumTestSets,1);
             for i = 1:obj.cvpart.NumTestSets
                 this_foldEstimator{i} = copy(obj.estimator);
@@ -114,6 +117,8 @@ classdef crossValPredict < crossValidator & yFit
                     % matching which allows us to use the fast option
                     yfit{i} = this_foldEstimator{i}.predict(test_dat, 'fast', true)';
                     
+                    this_foldEstimator{i} = this_foldEstimator{i}; % propogates modified handle object outside parfor loop
+                    
                     if obj.verbose, fprintf('Completed fold %d/%d\n', i, obj.cvpart.NumTestSets); end
                 end
                 for i = 1:obj.cvpart.NumTestSets
@@ -122,7 +127,6 @@ classdef crossValPredict < crossValidator & yFit
             end
             
             obj.foldEstimator = this_foldEstimator;
-            obj.Y = Y;
             obj.evalTime = toc(t0);
             obj.is_done = true;
         end
@@ -153,13 +157,18 @@ classdef crossValPredict < crossValidator & yFit
             end
         end
         
+        %% dependent methods
         function set.cvpart(obj, cvpart)
-           obj.cvpart = cvpart;
+           obj.cvpart0 = cvpart;
            obj.yfit = [];
            obj.yfit_null = [];
            obj.evalTime = -1;
            obj.fold_lbls = [];
            obj.is_done = false;
+        end
+        
+        function val = get.cvpart(obj)
+            val = obj.cvpart0;
         end
         
         function obj = repartition(obj)
@@ -170,12 +179,11 @@ classdef crossValPredict < crossValidator & yFit
             try
                 figure;
                 if isa(getBaseEstimator(obj.estimator), 'modelClf')
-                    [uniq_val,~,numericData] = unique([obj.yfit; obj.Y]);
-                    values = min(numericData):max(numericData);
+                    values = 1:length(obj.classLabels);
 
                     cfmat = confusionmat(obj.Y, obj.yfit);
 
-                    uniq_val = cellstr(categorical(uniq_val));
+                    uniq_val = cellstr(categorical(obj.classLabels));
                     uniq_val = strrep(uniq_val,'_','');
                     
                     [uniq_val_pred, uniq_val_obs] = deal(cell(size(uniq_val)));

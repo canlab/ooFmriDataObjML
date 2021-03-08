@@ -69,7 +69,6 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         offset;
         
         classLabels;
-        misclfCost;
     end
     
     properties (Access = private, Hidden)

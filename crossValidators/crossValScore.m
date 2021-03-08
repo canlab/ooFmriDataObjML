@@ -72,7 +72,6 @@
 
 classdef crossValScore < crossValidator & yFit
     properties (SetAccess = private)
-        scorer = [];
         scores = [];
         scores_null = [];
         
@@ -80,8 +79,14 @@ classdef crossValScore < crossValidator & yFit
         evalTimeFits = -1;
     end
     
-    properties
-        cvpart = [];
+    properties (Dependent)
+        cvpart;
+        scorer;
+    end
+    
+    properties (Hidden = true, Access = private)
+        cvpart0 = [];
+        scorer0 = [];
     end
     
     methods
@@ -114,7 +119,8 @@ classdef crossValScore < crossValidator & yFit
             end
             
             % do coss validation. Dif invocations for parallel vs. serial
-            obj.yfit_raw = [];
+            obj.Y = Y;
+            [obj.yfit, obj.yfit_raw] = deal([]);
             
             this_foldEstimator = cell(obj.cvpart.NumTestSets,1);
             for i = 1:obj.cvpart.NumTestSets
@@ -134,7 +140,31 @@ classdef crossValScore < crossValidator & yFit
                     end
 
                     this_foldEstimator{i}.fit(train_dat, train_Y);
-                    obj.yfit_raw = [obj.yfit_raw; this_foldEstimator{i}.score_samples(test_dat, 'fast', true)];
+                    tmp_yfit_raw = this_foldEstimator{i}.score_samples(test_dat, 'fast', true);
+
+                    % any score_samples columns will need to be resorted to
+                    % match classLabels here since they may differ across
+                    % foldEstimators.
+                    this_baseEstimator = getBaseEstimator(this_foldEstimator{i});
+                    if isa(this_baseEstimator, 'modelClf')
+                        obj.yfit = [obj.yfit; this_baseEstimator.decisionFcn(tmp_yfit_raw)];
+                        
+                        assert(length(this_baseEstimator.classLabels) == length(obj.classLabels), ...
+                            'Number of class labels in Y don''t match number in Y partition. Check that cvpartitioner is appropriately straifying outcomes cross folds.');
+                        
+                        nClasses = length(obj.classLabels);
+                        if nClasses > 2
+                            resortIdx = zeros(1,nClasses);
+                            for j = 1:nClasses % the assertion above ensures fold estimators will have nClasses
+                                resortIdx(j) = find(this_baseEstimator.classLabels == obj.classLabels(j));
+                            end
+                            tmp_yfit_raw = tmp_yfit_raw(:,resortIdx);
+                        end
+                    else
+                        obj.yfit = [obj.yfit; tmp_yfit_raw];
+                    end
+                    
+                    obj.yfit_raw = [obj.yfit_raw; tmp_yfit_raw];
                 end
             else
                 if ~isempty(gcp('nocreate')), delete(gcp('nocreate')); end
@@ -154,20 +184,46 @@ classdef crossValScore < crossValidator & yFit
                     this_foldEstimator{i}.fit(train_dat, train_Y);
                     % we can always make certain assumptions about the train and test space
                     % matching which allows us to use the fast option
-                    yfit_raw{i} = this_foldEstimator{i}.score_samples(test_dat, 'fast', true)';
+                    tmp_yfit_raw = this_foldEstimator{i}.score_samples(test_dat, 'fast', true);
+                    
+                    % any score_samples columns will need to be resorted to
+                    % match classLabels here since they may differ across
+                    % foldEstimators.
+                    this_baseEstimator = getBaseEstimator(this_foldEstimator{i});
+                    if isa(this_baseEstimator, 'modelClf')
+                        assert(length(this_baseEstimator.classLabels) == length(obj.classLabels), ...
+                            'Number of class labels in Y don''t match number in Y partition. Check that cvpartitioner is appropriately straifying outcomes cross folds.');
+                        yfit{i} = this_baseEstimator.decisionFcn(tmp_yfit_raw);
+
+                        nClasses = length(obj.classLabels);
+                        if nClasses > 2
+                            resortIdx = zeros(1,nClasses);
+                            for j = 1:nClasses % the assertion above ensures fold estimators will have nClasses
+                                resortIdx(j) = find(this_baseEstimator.classLabels == obj.classLabels(j));
+                            end
+                            tmp_yfit_raw = tmp_yfit_raw(:,resortIdx);
+                        end
+                    else
+                        yfit{i} = tmp_yfit_raw;
+                    end
+                    
+                    yfit_raw{i} = tmp_yfit_raw;
+                    this_foldEstimator{i} = this_foldEstimator{i}; % propogates modified handle object outside parfor loop
                     
                     if obj.verbose, fprintf('Completed fold %d/%d\n', i, obj.cvpart.NumTestSets); end
                 end
                 
-                obj.yfit_raw = cell2mat(yfit_raw{i});
+                obj.yfit_raw = cell2mat(yfit_raw);
+                obj.yfit = vertcat(yfit{:});
             end
             
+            % resort from fold order to original order
             [~,I] = sort(obj.fold_lbls);
             [~,II] = sort(I);
             obj.yfit_raw = obj.yfit_raw(II,:); 
+            obj.yfit = obj.yfit(II,:);
             
             obj.foldEstimator = this_foldEstimator;
-            obj.Y = Y;
             
             obj.evalTime = -1;
             obj.evalTimeFits = toc(t0);
@@ -197,34 +253,44 @@ classdef crossValScore < crossValidator & yFit
                 obj.Y = varargin{2};
                 Y = obj.Y;
             end
-            
-            yfit_raw = [];
-            yfit_null = [];
-            
+                        
+            % compute null scores
+            obj.yfit_null = [];
+            obj.scores_null = zeros(1, obj.cvpart.NumTestSets);
             for i = 1:obj.cvpart.NumTestSets                
-                yfit_raw = [yfit_raw; ...
-                    obj.foldEstimator{i}.score_null(sum(obj.cvpart.TestSize(i)))];
+                tmp_yfit_raw = obj.foldEstimator{i}.score_null(sum(obj.cvpart.TestSize(i)));
                 
-                yfit_null = [yfit_null; ...
-                    obj.foldEstimator{i}.predict_null(sum(obj.cvpart.TestSize(i)))];
+                % any score_samples columns will need to be resorted to
+                % match classLabels here since they may differ across
+                % foldEstimators.
+                this_baseEstimator = getBaseEstimator(obj.foldEstimator{i});
+                if isa(this_baseEstimator, 'modelClf')
+                        assert(length(this_baseEstimator.classLabels) == length(obj.classLabels), ...
+                            'Number of class labels in Y don''t match number in Y partition. Check that cvpartitioner is appropriately straifying outcomes cross folds.');
+                        
+                        nClasses = length(obj.classLabels);
+                        if nClasses > 2
+                            resortIdx = zeros(1,nClasses);
+                            for j = 1:nClasses % the assertion above ensures fold estimators will have nClasses
+                                resortIdx(j) = find(this_baseEstimator.classLabels == obj.classLabels(j));
+                            end
+                            tmp_yfit_raw = tmp_yfit_raw(:, resortIdx);
+                        end
+                end
+                
+                fold_yfit_raw = tmp_yfit_raw;
+                fold_yfit_null = obj.foldEstimator{i}.predict_null(sum(obj.cvpart.TestSize(i)));
+                fold_Y = obj.Y(obj.cvpart.test(i));
+                
+                yfit = manual_yFit(fold_Y, fold_yfit_null, fold_yfit_raw);
+                yfit.classLabels = obj.classLabels;
+                
+                obj.scores_null(i) = obj.scorer(yfit);
+                obj.yfit_null = [obj.yfit_null; fold_yfit_null];
             end
             [~,I] = sort(obj.fold_lbls);
             [~,II] = sort(I);
-            yfit_raw = yfit_raw(II,:);
-            obj.yfit_null = yfit_null(II);
-            
-            k = unique(obj.cvpart.NumTestSets);
-            obj.scores_null = zeros(k,1);
-            for i = 1:k
-                fold_Y = obj.Y(obj.cvpart.test(i));
-                
-                fold_yfit_raw = yfit_raw(obj.cvpart.test(i),:);
-                fold_yfit = obj.yfit_null(obj.cvpart.test(i));
-                
-                yfit = manual_yFit(fold_Y, fold_yfit, fold_yfit_raw);
-                
-                obj.scores_null(i) = obj.scorer(yfit);
-            end
+            obj.yfit_null = obj.yfit_null(II);
         end
         
         
@@ -239,28 +305,30 @@ classdef crossValScore < crossValidator & yFit
                 fold_Y = obj.Y(obj.cvpart.test(i));
                 
                 fold_yfit_raw = obj.yfit_raw(obj.cvpart.test(i),:);
+                fold_yfit = obj.yfit(obj.cvpart.test(i),:);
                 
                 this_estimator = getBaseEstimator(obj.foldEstimator{i});
                 if isa(this_estimator, 'modelRegressor')
-                    fold_yfit = fold_yfit_raw;
+                    yfit = manual_yFit(fold_Y, fold_yfit, fold_yfit_raw);
                 elseif isa(this_estimator, 'modelClf')
-                    fold_yfit = this_estimator.decisionFcn(fold_yfit_raw);
+                    yfit = manual_yFit(fold_Y, fold_yfit, fold_yfit_raw);
+                    yfit.classLabels = obj.classLabels;
                 else
                     error('Unsupported base estimator type');
                 end
-                
-                yfit = manual_yFit(fold_Y, fold_yfit, fold_yfit_raw);
                 
                 obj.scores(i) = obj.scorer(yfit);
             end
             obj.evalTimeScorer = toc(t0);
         end
+                
+        function obj = repartition(obj)
+            obj.cvpart = obj.cvpart.repartition;
+        end
         
-        %% set methods
-        % these could be modified to be Dependent properties, and likely 
-        % should be 
+        %% dependent methods
         function set.cvpart(obj, cvpart)
-           obj.cvpart = cvpart;
+           obj.cvpart0 = cvpart;
            obj.yfit = [];
            obj.yfit_null = [];
            obj.evalTime = -1;
@@ -273,10 +341,18 @@ classdef crossValScore < crossValidator & yFit
            obj.scores_null = [];
         end
         
-        function obj = set_scorer(obj, scorer)
-           obj.scorer = scorer;
+        function val = get.cvpart(obj)
+            val = obj.cvpart0;
+        end
+        
+        function set.scorer(obj, scorer)
+           obj.scorer0 = scorer;
            obj.evalTime = -1;
            obj.evalTimeScorer = -1;
+        end
+        
+        function val = get.scorer(obj)
+            val = obj.scorer0;
         end
         
         %% convenience functions

@@ -71,6 +71,10 @@ classdef svmClf < modelClf
         hyper_params = {'kernel', 'kernelScale', 'order', 'nu'};
     end
           
+    properties (Dependent = true, SetAccess = private)
+        classLabels;
+        offset;
+    end
     
     methods
         %% constructor
@@ -170,9 +174,8 @@ classdef svmClf < modelClf
             end
         end        
          
-        function yfit_raw = score_null(varargin)
-            yfit_raw = score_null@linearModelEstimator(varargin{:});
-            
+        function yfit_raw = score_null(obj, n)
+            yfit_raw = repmat(obj.scoreFcn(obj.offset),n,1); 
             
             st_idx = find(strcmp(obj.fitcsvmOpts, 'ScoreTransform'));
             if ~(strcmp(obj.fitcsvmOpts{st_idx+1},'none') || strcmp(obj.fitcsvmOpts{st_idx+1}, 'identity'))
@@ -192,6 +195,18 @@ classdef svmClf < modelClf
         end
         
         %% methods for dependent properties   
+        
+        function val = get.classLabels(obj)
+            if isempty(obj.Mdl)
+                val = [];
+            else
+                val = obj.Mdl.ClassNames;
+            end
+        end
+        
+        function set.classLabels(~, ~)
+            error('You shouldn''t be setting classLabels directly. This is set automatically when calling fit.');
+        end
         
         function set.nu(obj, val)
             assert(val >= 0, 'lambda must be greater than 0');
@@ -338,6 +353,19 @@ classdef svmClf < modelClf
         
         function val = get.scoreFcn(obj)   
             val = obj.scoreFcn0;
+        end
+        
+        
+        function val = get.offset(obj)
+            if isempty(obj.Mdl)
+                val = 0;
+            else
+                val = obj.Mdl.Bias;
+            end
+        end
+        
+        function set.offset(~, ~)
+            warning('You shouldn''t be setting offset directly. offset is part of obj.Mdl. Doing nothing.');
         end
     end
     

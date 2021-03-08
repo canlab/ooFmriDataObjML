@@ -43,7 +43,12 @@ classdef (Abstract) modelClf < modelEstimator
         % training data (it's null w.r.t. X, not Y). Note this is
         % independent of scores or decision functions.
         function yfit_null = predict_null(obj, n)
-            n_pos = floor(n*obj.prior);
+            if length(obj.classLabels) == 2
+                prior = [1-obj.prior; obj.prior];
+            else
+                prior = obj.prior;
+            end
+            n_pos = floor(n*prior);
             
             yfit_null = [];
             for i = 1:length(obj.classLabels)
@@ -58,7 +63,7 @@ classdef (Abstract) modelClf < modelEstimator
                 % into labels using intervals on the uniform 
                 % distribution to model priors likelihoods for each 
                 % label
-                r = u < cumsum(obj.prior(:))';
+                r = u < cumsum(prior(:))';
                 label = [~any(diff(r, [], 2),2), diff(r, [], 2)];
                 
                 % convert indexed matrix into corresponding labels

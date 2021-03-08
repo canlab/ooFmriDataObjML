@@ -12,6 +12,11 @@ classdef (Abstract) yFit < handle & matlab.mixin.Copyable
         Y = [];
     end
     
+    properties (Abstract)
+        % used in multiclass classification. Order must match order of columns returned by estimator.score_samples()
+        classLabels; 
+    end
+    
     % needs methods to ensure yfit and yfit_null can be fit Needs
     % reconciliation between cv.do and predictor.fit
 end

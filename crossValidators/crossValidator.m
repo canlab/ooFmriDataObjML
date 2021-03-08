@@ -17,6 +17,10 @@ classdef (Abstract) crossValidator < yFit
         is_done = false;
     end
     
+    properties (Dependent = true)
+        classLabels;
+    end
+    
     properties (Abstract)
         cvpart;
     end
@@ -60,7 +64,10 @@ classdef (Abstract) crossValidator < yFit
             fnames_score = fieldnames(cvObj);
             fnames_predict = fieldnames(obj);
             for i = 1:length(fnames_score)
-                if ismember(fnames_score{i}, fnames_predict)
+                % don't try to copy classLabels because it's a non-setable
+                % property, doesn't need to be set though as long as we
+                % copy Y.
+                if ismember(fnames_score{i}, fnames_predict) && ~strcmp(fnames_score{i}, 'classLabels')
                     try
                         if isa(cvObj.(fnames_score{i}), 'matlab.mixin.Copyable')
                             obj.(fnames_score{i}) = copy(cvObj.(fnames_score{i}));
@@ -85,7 +92,23 @@ classdef (Abstract) crossValidator < yFit
                 this_baseEstimator = getBaseEstimator(cvObj.foldEstimator{i});
                 if  isa(this_baseEstimator,'modelClf')
                     warning('crossValidator:crossValPredict','You will not be able to convert this object back to crossValScore due to information loss');
-                    obj.yfit = [obj.yfit; this_baseEstimator.decisionFcn(cvObj.yfit_raw(fold_idx,:))];
+                    
+                    % we need to reorder raw scores to match base
+                    % estimator's order, which isn't guaranteed to match
+                    assert(length(this_baseEstimator.classLabels) == length(obj.classLabels), ...
+                        'Number of class labels in Y don''t match number in Y partition. Check that cvpartitioner is appropriately straifying outcomes cross folds.');
+                    nClasses = length(obj.classLabels);
+                    if nClasses > 2
+                        resortIdx = zeros(1,nClasses);
+                        for j = 1:nClasses % the assertion above ensures fold estimators will have nClasses
+                            resortIdx(j) = find(this_baseEstimator.classLabels(j) == obj.classLabels);
+                        end
+                    else
+                        assert(size(cvObj.yfit_raw,2) == 1, sprintf('Binary classifiers should only have one score per observation but %d found.', size(cvObj.yfit_raw,2)));
+                        resortIdx = 1;
+                    end
+                        
+                    obj.yfit = [obj.yfit; this_baseEstimator.decisionFcn(cvObj.yfit_raw(fold_idx, resortIdx))];
                 elseif isa(this_baseEstimator, 'modelRegressor')
                     obj.yfit = [obj.yfit; obj.yfit_raw(fold_idx)];
                 else
@@ -112,7 +135,10 @@ classdef (Abstract) crossValidator < yFit
                 fnames_predict = fieldnames(cvObj);
                 fnames_score = fieldnames(obj);
                 for i = 1:length(fnames_predict)
-                    if ismember(fnames_predict{i}, fnames_score)
+                    % don't try to copy classLabels because it's a non-setable
+                    % property, doesn't need to be set though as long as we
+                    % copy Y.
+                    if ismember(fnames_predict{i}, fnames_score) && ~strcmp(fnames_predict{i},'classLabels')
                         try
                             if isa(cvObj.(fnames_predict{i}), 'matlab.mixin.Copyable')
                                 obj.(fnames_predict{i}) = copy(cvObj.(fnames_predict{i}));
@@ -135,6 +161,15 @@ classdef (Abstract) crossValidator < yFit
                 error('Conversion of %s to crossValPredict is not supported', ...
                     class(cvObj));
             end
+        end
+        
+        %% dependent properties
+        function val = get.classLabels(obj)
+            val = unique(obj.Y, 'stable');
+        end
+        
+        function set.classLabels(~, ~)
+            error('Class labels cannot be set explicitly, they''re determined by unique entries in obj.Y');
         end
     end
     

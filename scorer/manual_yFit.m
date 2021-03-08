@@ -2,6 +2,10 @@
 % want to put them into a type yfit object so that you can apply
 % scorers to them.
 classdef manual_yFit < yFit
+    properties
+        classLabels = [];
+    end
+    
     methods
         function obj = manual_yFit(Y, yfit, varargin)
             obj.Y = Y;
@@ -14,7 +18,5 @@ classdef manual_yFit < yFit
         function set_null(obj, null_yfit)
             obj.yfit_null = null_yfit;
         end
-        
-        
     end
 end
