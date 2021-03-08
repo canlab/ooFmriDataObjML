@@ -203,7 +203,7 @@ classdef crossValPredict < crossValidator & yFit
                     end
                     title('Classifier Confusion Matrix');
 
-                elseif isa(getBaseEstimator(obj), 'modelRegressor')
+                elseif isa(getBaseEstimator(obj.estimator), 'modelRegressor')
                     title('Regressor Performance');
                     varargout{:} = plot(obj.Y, obj.yfit, '.', varargin{:});
                     lsline

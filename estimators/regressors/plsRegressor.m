@@ -9,6 +9,7 @@ classdef plsRegressor < linearModelEstimator & modelRegressor
         
         B = [];
         offset = 0;
+        offset_null = 0;
     end
     
     properties (Access = ?Estimator)
@@ -30,6 +31,7 @@ classdef plsRegressor < linearModelEstimator & modelRegressor
         function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
+            obj.offset_null = mean(Y);
             
             if ~isempty(obj.numcomponents)
                 [~,~,~,~,b] = plsregress(X, Y, obj.numcomponents);

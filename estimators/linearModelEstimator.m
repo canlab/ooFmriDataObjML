@@ -7,17 +7,19 @@
 %
 % We have some crossed dependencies here that aren't great, but make sense
 % to me so I'm keeping them. Models will be combination of (modelRegressor,
-% modelClf) x (linearModelEstimator, nonlinearModelEstimator).
-classdef (Abstract) linearModelEstimator < modelEstimator    
+% modelClf) x (linearModelEstimator, ~).
+classdef (Abstract) linearModelEstimator < baseEstimator    
     % in most cases these can just be set to empty and zero values, but we
     % define them as abstract so we can change their access properties
     % downstream for things like Dependent calls.
     % These will usually be suitable defaults
     %   B = [];
     %   offset = 0;
-    properties (Abstract, SetAccess = private) % <-- check this, I'm not sure it should be set to private
+    properties (Abstract, SetAccess = private)
         B;
         offset;
+
+        offset_null;
     end
     
     methods
@@ -25,15 +27,10 @@ classdef (Abstract) linearModelEstimator < modelEstimator
             yfit_raw = X*obj.B + obj.offset;
         end
         
-        % not sure if this is valid for classifiers with scoreFcns. The raw
-        % null score for a linearSvmClf with a nonlinear scoreFcn may be
-        % obj.scoreFcn(obj.offset). Need to check this, and if so move
-        % score_raw into modelRegressor, and leave it abstract in modelClf,
-        % implementing it on a case by case basis in modelClf subclases.
-        % Right now I'm just overloading this in modelClf instances that
-        % use scoreFcn's and throwing a warning if they're non-trivial
+        % for regressors this should be the mean observed value. For
+        % classifiers this should be 0.
         function yfit_raw = score_null(obj, n)           
-           yfit_raw = repmat(obj.offset,n,1); 
+           yfit_raw = repmat(obj.offset_null, n, 1); 
         end
     end
 end

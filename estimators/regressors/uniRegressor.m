@@ -20,11 +20,12 @@ classdef uniRegressor < linearModelEstimator & modelRegressor
         
         B = [];
         offset = 0;
+        offset_null = 0;
         
         intercept = true;
     end
     
-    properties (Access = ?Estimator)
+    properties (Access = ?baseEstimator)
         hyper_params = {'intercept'};
     end
     
@@ -46,8 +47,10 @@ classdef uniRegressor < linearModelEstimator & modelRegressor
             
             if obj.intercept
                 b = zeros(size(X,2),2);
+                obj.offset_null = mean(Y);
             else
                 b = zeros(size(X,2),1);
+                obj.offset_null = 0;
             end
             
             for i = 1:size(X,2)

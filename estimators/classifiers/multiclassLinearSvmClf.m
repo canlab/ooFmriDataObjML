@@ -55,7 +55,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         scoreFcn;
     end
     
-    properties (Dependent, SetAccess = ?modelEstimator)
+    properties (Dependent, SetAccess = ?baseEstimator)
         regularization
         lambda
         intercept
@@ -181,7 +181,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
                     
                     obj.addDynProp(propname);
                     this_prop = findprop(obj,propname);
-                    this_prop.SetAccess = 'protected'; % this forces us to overload get_params and set_hyper here
+                    this_prop.SetAccess = 'protected'; % this forces us to overload get_params and set_params here
                     this_prop.NonCopyable = false;
                     % we define get and set methods like so (for
                     % example, using lambda_1 as the regularization

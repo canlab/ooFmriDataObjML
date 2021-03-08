@@ -43,7 +43,7 @@ classdef svmClf < modelClf
         scoreFcn;
     end
     
-    properties (Dependent, SetAccess = ?modelEstimator)
+    properties (Dependent, SetAccess = ?baseEstimator)
         kernel;
         kernelScale;
         order;

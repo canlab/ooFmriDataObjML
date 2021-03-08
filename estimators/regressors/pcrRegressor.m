@@ -9,9 +9,10 @@ classdef pcrRegressor < linearModelEstimator & modelRegressor
         
         B = [];
         offset = 0;
+        offset_null = 0;
     end
     
-    properties (Access = ?Estimator)
+    properties (Access = ?baseEstimator)
         hyper_params = {'numcomponents'};
     end
     
@@ -30,6 +31,7 @@ classdef pcrRegressor < linearModelEstimator & modelRegressor
         function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
+            obj.offset_null = mean(Y);
             
             % code below was copied from fmri_data/predict with minor
             % modifications for our different numenclature.
@@ -46,7 +48,7 @@ classdef pcrRegressor < linearModelEstimator & modelRegressor
                 numc = obj.numcomponents;
 
                 if obj.numcomponents > size(pc, 2)
-                    disp('WARNING!! Number of components requested is more than unique components in training data.');
+                    warning('PCR:numcomponents','Number of components requested (%d) is more than unique components in training data (%d).', obj.numcomponents, size(pc,2));
                     numc = size(pc, 2);
                 end
                 pc = pc(:, 1:numc);

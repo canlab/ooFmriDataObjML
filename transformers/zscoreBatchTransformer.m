@@ -1,13 +1,13 @@
 % zscores each batch so that within-batch the mean value is zero and
 % variance is 1
-classdef zscoreBatchTransformer < Transformer
+classdef zscoreBatchTransformer < baseTransformer
     properties (SetAccess = private)
         get_batch_id = @(X)(X.metadata_table.subject_id);
         
         isFitted = true;
         fitTime = 0;
     end
-    properties (Access = ?Transformer)
+    properties (Access = ?baseTransformer)
         hyper_params = {};
     end
     

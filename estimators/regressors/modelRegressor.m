@@ -4,8 +4,8 @@
 %
 % We have some crossed dependencies here that aren't great, but make sense
 % to me so I'm keeping them. Models will be combination of (modelRegressor,
-% modelClf) x (linearModelEstimator, nonlinearModelEstimator).
-classdef (Abstract) modelRegressor < modelEstimator    
+% modelClf) x (linearModelEstimator, ~).
+classdef (Abstract) modelRegressor < baseEstimator        
     methods
         function yfit = predict(obj, X, varargin)
             yfit = obj.score_samples(X, varargin{:});

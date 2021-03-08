@@ -1,7 +1,7 @@
 % applies an arbitrary function to the data.
 %
 % useful for converting arbitrary canlabCore functions into transformer objects
-classdef functionTransformer < Transformer
+classdef functionTransformer < baseTransformer
     properties (SetAccess = private)
         funhan = @(x1)(x1); % default to identity function
         
@@ -9,7 +9,7 @@ classdef functionTransformer < Transformer
         fitTime = 0;
     end
     
-    properties (Access = ?Transformer)
+    properties (Access = ?baseTransformer)
         hyper_params = {};
     end
     

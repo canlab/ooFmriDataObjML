@@ -2,7 +2,7 @@
 % is sensitive to certain types of data charactreistics. sani_for_combat is used
 % to modify the data before combat is used. Please refer to that function in
 % utils for details
-classdef combatTransformer < Transformer
+classdef combatTransformer < baseTransformer
     properties
         combat_opts = {[], 1};
     end
@@ -18,7 +18,7 @@ classdef combatTransformer < Transformer
         fitTime = -1;
     end
     
-    properties (Access = ?Transformer)
+    properties (Access = ?baseTransformer)
         hyper_params = {'parametric'};
     end
     
@@ -121,7 +121,7 @@ classdef combatTransformer < Transformer
             cb_dat = dat.get_wh_image(batch_id ~= tmp_ref_id);
         end
         
-        function set_hyp(obj, hyp_name, hyp_val)
+        function set_params(obj, hyp_name, hyp_val)
             params = obj.get_params();
             assert(ismember(hyp_name, params), ...
                 sprintf('%s is not a hyperparameter of %s\n', hyp_name, class(obj)));

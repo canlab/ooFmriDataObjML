@@ -17,7 +17,7 @@
 %   ToDo ::
 %
 %   second level regressors need to be implemented. There are various ways
-%   to do this, but all are ugly. modelEstimators are supposed to operate
+%   to do this, but all are ugly. baseEstimators are supposed to operate
 %   on matrix data, and multilevelGlmRegressor already violates this by
 %   requiring batch information. 2nd level regressors make this worse.
 %
@@ -52,13 +52,14 @@ classdef multilevelGlmRegressor < linearModelEstimator & modelRegressor
         
         B = [];
         offset = 0;
+        offset_null = 0;
         
         glmfit_opts = {};
         
         stats = [];
     end
     
-    properties (Access = ?Estimator)
+    properties (Access = ?baseEstimator)
         hyper_params = {};
     end
     
@@ -83,6 +84,7 @@ classdef multilevelGlmRegressor < linearModelEstimator & modelRegressor
             t0 = tic;
             
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
+            obj.offset_null = mean(Y);
             
             [~,exemplar,batch_ids] = unique(obj.get_batch_id(X),'stable');
             if ~isempty(obj.get_secondlvl_reg)

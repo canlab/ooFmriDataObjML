@@ -56,7 +56,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         scoreFcn;
     end
     
-    properties (Dependent, SetAccess = ?modelEstimator)
+    properties (Dependent, SetAccess = ?baseEstimator)
         intercept;
         lambda;
         regularization;
@@ -432,7 +432,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         % validation folds, and this check incorporates a method for
         % allowing the user to specify function handles to cvpartition 
         % object generators instead of cvpartition instances. This is
-        % useful if this modelEstimator ends up wrapped in some
+        % useful if this baseEstimator ends up wrapped in some
         % crossValidator object, since passing a function handle then 
         % allows for cvpartition to be generated on demand based on the
         % particular fold slicing that's received from the crossValidator.

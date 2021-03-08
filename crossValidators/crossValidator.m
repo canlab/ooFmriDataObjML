@@ -31,7 +31,7 @@ classdef (Abstract) crossValidator < yFit
     
     methods
         function obj = crossValidator(estimator, cv, varargin)            
-            assert(isa(estimator,'Estimator'), 'estimator must be type Estimator');
+            assert(isa(estimator,'baseEstimator'), 'estimator must be type baseEstimator');
             
             obj.estimator = copy(estimator);
             if ~isempty(cv), obj.cv = cv; end

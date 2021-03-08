@@ -28,7 +28,7 @@
 % Note that for simplicity the data is passed in vectorized form here using
 % features objects, but lassoPcr could also be wrapped in an
 % fmriDataEstimator object with an appropriately specified
-% featuresConstructor if you wanted to develop an Estimator that operated
+% featuresConstructor if you wanted to develop an baseEstimator that operated
 % directly on fmri_data objects.
 % 
 %
@@ -115,12 +115,8 @@
 %     cvPredictor = cvPredictor.do_null;
 %     f = figure(2);
 %     cvPredictor.plot('Parent',gca(f));
-classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
-    properties (SetAccess = ?modelEstimator)
-        numcomponents = [];      
-    end
-    
-    properties (Dependent, SetAccess = ?modelEstimator)
+classdef lassoPcrRegressor < linearModelEstimator & modelRegressor    
+    properties (Dependent, SetAccess = ?baseEstimator)
         lambda
         alpha
     end
@@ -129,14 +125,16 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
         isFitted = false;
         fitTime = -1;  
         lassoParams = {};
-        
+
         B = [];
         offset = 0;
-        
+        offset_null = 0;
+         
         lassoCV_funhan = [];
     end
     
-    properties (Access = ?Estimator)
+    properties (Access = ?baseEstimator)
+        numcomponents = [];
         hyper_params = {'numcomponents', 'lambda', 'alpha'};
     end
     
@@ -180,6 +178,8 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
         function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
+            obj.offset_null = mean(Y);
+
             obj.check_lasso_params();
 
             % code below was copied from fmri_data/predict with minor
@@ -267,8 +267,8 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
         
         % we need to modify this logic a bit to keep lassoParams in sync 
         % with lassoPcrRegressor hyperparameters 
-        function set_hyp(obj, hyp_name, hyp_val)
-            set_hyp@modelEstimator(obj, hyp_name, hyp_val);
+        function set_params(obj, hyp_name, hyp_val)
+            set_params@baseEstimator(obj, hyp_name, hyp_val);
             
             % this will adjust lassoParams to match the hyperparameters
             % specified.
@@ -325,7 +325,7 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
         % validation folds, and this check incorporates a method for
         % allowing the user to specify function handles to cvpartition 
         % object generators instead of cvpartition instances. This is
-        % useful if this modelEstimator ends up wrapped in some
+        % useful if this baseEstimator ends up wrapped in some
         % crossValidator object, since passing a function handle then 
         % allows for cvpartition to be generated on demand based on the
         % particular fold slicing that's received from the crossValidator.

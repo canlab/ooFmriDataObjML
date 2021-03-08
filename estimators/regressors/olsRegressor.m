@@ -17,11 +17,12 @@ classdef olsRegressor < linearModelEstimator & modelRegressor
         
         B = [];
         offset = 0;
+        offset_null = 0;
         
         intercept = true;
     end
     
-    properties (Access = ?Estimator)
+    properties (Access = ?baseEstimator)
         hyper_params = {'intercept'};
     end
     
@@ -40,6 +41,7 @@ classdef olsRegressor < linearModelEstimator & modelRegressor
         function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
+            obj.offset_null = mean(Y);
             
             if obj.intercept
                 X = [ones(length(Y),1), X];

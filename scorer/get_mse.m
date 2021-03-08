@@ -3,7 +3,7 @@ function err = get_mse(yFitObj)
 
     if ~isempty(yFitObj.yfit)
         err = mean((yFitObj.yfit - yFitObj.Y).^2);
-    elseif ~isempty(yfitObj.yfit_raw)
+    elseif ~isempty(yFitObj.yfit_raw)
         warning('yfit not found, using yfit_raw');
         err = mean((yFitObj.yfit_raw - yFitObj.Y).^2);
     else

@@ -1,4 +1,4 @@
-classdef pipeline < Estimator & Transformer
+classdef pipeline < baseEstimator & baseTransformer
     properties 
         verbose = false;
     end
@@ -15,22 +15,23 @@ classdef pipeline < Estimator & Transformer
         fitTime = -1
     end
     
-    properties (Access = {?Transformer, ?Estimator})
+    properties (Access = {?baseTransformer, ?baseEstimator})
         hyper_params = {};
     end
     
     methods
         function obj = pipeline(steps, varargin)
             for i = 1:length(steps) - 1
-                assert(isa(steps{i}{2}, 'Transformer'), 'All but last step must be transformers');
+                assert(isa(steps{i}{2}, 'baseTransformer'), ...
+                    sprintf('All but last step must be transformers, but element %d is type %s',i,class(steps{i}{2})));
                 
                 obj.transformer_names{end+1} = steps{i}{1};
                 obj.transformers{end+1} = copy(steps{i}{2});
             end
-            if isa(steps{end}{2},'Estimator')
+            if isa(steps{end}{2},'baseEstimator')
                 obj.estimator_name = steps{end}{1};
                 obj.estimator = copy(steps{end}{2});
-            elseif isa(steps{end}{2},'Transformer')
+            elseif isa(steps{end}{2},'baseTransformer')
                 obj.transformer_names{end+1} = steps{end}{1};
                 obj.transformers{end+1} = copy(steps{end}{2});
             else
@@ -138,26 +139,26 @@ classdef pipeline < Estimator & Transformer
             params = obj.hyper_params;
         end
         
-        % finds object to modify and calls its obj.set_hyp(passThrough,
+        % finds object to modify and calls its obj.set_params(passThrough,
         % hyp_val) where passThrough are the residual tokens of hyp_name
         % after removing the target object name. In most cases the residual
         % token will be a hyperparameter name, but if you're using a
         % pipeline of pipelines then the residual token could be another
         % parameter of the form class_param, in which case the function
         % recurses.
-        function set_hyp(obj, hyp_name, hyp_val)
+        function set_params(obj, hyp_name, hyp_val)
             hyp_name = strsplit(hyp_name,'__');
             for i = 1:length(obj.transformers)
                 if strcmp(hyp_name{1}, obj.transformer_names{i})
                     passThrough = strjoin(hyp_name(2:end),'__');
-                    obj.transformers{i}.set_hyp(passThrough, hyp_val);
+                    obj.transformers{i}.set_params(passThrough, hyp_val);
                     return
                 end
             end
             for i = 1:length(obj.estimator)
                 if strcmp(hyp_name{1}, obj.estimator_name)
                     passThrough = strjoin(hyp_name(2:end),'__');
-                    obj.estimator.set_hyp(passThrough, hyp_val);
+                    obj.estimator.set_params(passThrough, hyp_val);
                     return
                 end
             end

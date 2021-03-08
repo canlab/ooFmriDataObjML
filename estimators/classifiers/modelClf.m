@@ -1,4 +1,4 @@
-classdef (Abstract) modelClf < modelEstimator
+classdef (Abstract) modelClf < baseEstimator
     
     properties (SetAccess = protected)
         % estimated probability of positive class label during model fit,
@@ -14,14 +14,9 @@ classdef (Abstract) modelClf < modelEstimator
         classLabels;
     end
     
-    %{
-    properties (SetAccess  = protected)
-         % Multiclass classification requires a coding design
-         % specification, but for binary classifiers this is the implicit
-         % default. See fitcecoc help for details on Coding Designs.
-         codingDesign = [-1;1];
+    properties (SetAccess = private)
+        offset_null = 0;
     end
-    %}
     
     methods (Abstract)
         % a decision function that converts scores into class labels.

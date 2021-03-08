@@ -58,7 +58,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
         offset;
     end
     
-    properties (Dependent, Access = ?modelEstimator)
+    properties (Dependent, Access = ?baseEstimator)
         intercept;
         epsilon;
         lambda;
@@ -70,11 +70,13 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
         fitTime = -1;
         
         Mdl = [];
+
+        offset_null = 0;
         
         % CV_funhan = [];
     end
     
-    properties (Access = ?Estimator)
+    properties (Access = ?baseEstimator)
         hyper_params = {'intercept', 'C', 'lambda', 'epsilon', 'regularization'};
     end
           
@@ -155,6 +157,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
         function fit(obj, X, Y)
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
+            obj.offset_null = mean(Y);
             
             if ~isempty(obj.C) % if C parameter is in use, set lambda accordingly
                 % setting lambda erases C (since outside of this specific
@@ -351,7 +354,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
         % validation folds, and this check incorporates a method for
         % allowing the user to specify function handles to cvpartition 
         % object generators instead of cvpartition instances. This is
-        % useful if this modelEstimator ends up wrapped in some
+        % useful if this baseEstimator ends up wrapped in some
         % crossValidator object, since passing a function handle then 
         % allows for cvpartition to be generated on demand based on the
         % particular fold slicing that's received from the crossValidator.

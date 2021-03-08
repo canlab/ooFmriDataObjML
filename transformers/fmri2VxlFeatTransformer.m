@@ -4,8 +4,7 @@
 % of this help doc.
 %   
 %   properties (read only):
-%       model       - modelEstimator or modelEstimator
-%			representing underlying MVPA model, independent
+%       model       - baseEstimator representing underlying MVPA model, independent
 %                       of any brain space parameterization
 %       brainModel  - an fmri_data object that represents the model's 
 %                       corresponding brain space.
@@ -13,18 +12,18 @@
 %   methods:
 %       obj = fit(obj, dat, Y, varargin)
 %                   - fit a model to voxel data of fmri_data object dat to
-%                       predict Y using the modelEstimator specified when 
+%                       predict Y using the baseEstimator specified when 
 %                       the constructor was invoked. Any additional 
-%                       arguments are passed through to the modelEstimator.
+%                       arguments are passed through to the baseEstimator.
 %
 %       yfit = predict(obj, dat, [options])
-%                   - Use modelEstimator to predict outcome in dat. 
+%                   - Use baseEstimator to predict outcome in dat. 
 %           options::
 %               'fast' - true/false. If true fmri2VxlFeatTransformer assumes that 
 %                       dat.dat is already appropriately vectorized to be 
-%                       passed through directly to modelEstimator. 
+%                       passed through directly to baseEstimator. 
 %                       Otherwise dat is transformed to match brainModel 
-%                       before application of modelEstimator.
+%                       before application of baseEstimator.
 %               'featureConstructor_funhan'
 %                       - Some models need metadata in addition to brain
 %                       data (e.g. multilevelGlmRegressor needs some kind
@@ -44,19 +43,19 @@
 %                       fmri_data objects are vxl x obs.
 %
 %       weights = get_weights(obj)
-%                   - combines brainModel with modelEstimator weights and
+%                   - combines brainModel with baseEstimator weights and
 %                      returns the model in brain space. Useful for pattern
 %                      visualization.
 %
 %       params = get_params(obj)
 %                   - returns a list of valid hyperparameters for
-%                      modelEstimator.
+%                      baseEstimator.
 %
-%       obj = set_hyp(obj, hyp_name, hyp_val)
+%       obj = set_params(obj, hyp_name, hyp_val)
 %                   - sets hyperparameter value of hyp_name to hyp_val for
-%                       modelEstimator.
+%                       baseEstimator.
 % 
-% We implement ML algoithms as modelEstimators which expect
+% We implement ML algoithms as baseEstimators which expect
 % vectorized input, but fmri_data is not vectorized in a predictable way. 
 % fmri_data objects can differ in resolution and spatial extent for 
 % instance. fmri2VxlFeatTransformers serve as wrappers that mediate between 
@@ -68,7 +67,7 @@
 % object, and in that case you can simply invoke linearModelEstimators
 % directly rather than through an fmri2VxlFeatTransformer.
 
-classdef fmri2VxlFeatTransformer < Transformer
+classdef fmri2VxlFeatTransformer < baseTransformer
     properties (SetAccess = private)
         featureConstructor = @(X)(features(X.dat'));
                 
@@ -79,7 +78,7 @@ classdef fmri2VxlFeatTransformer < Transformer
         fitTime = -1;
     end
     
-    properties (Access = ?Transformer)
+    properties (Access = ?baseTransformer)
         hyper_params = {};
     end
     

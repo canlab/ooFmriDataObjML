@@ -4,7 +4,7 @@
 %
 %   estimator - an Estimatorm must allow these kinds of operations,
 %               params = estimator.getParams()
-%               estimator = estimator.set_hyp(params{1}, newVal)
+%               estimator = estimator.set_params(params{1}, newVal)
 %               estimator = estimator.fit(X,Y)
 %               yfit = estimator.predict(X)
 %               string valued names returned by getParams() define valid
@@ -48,7 +48,7 @@
 %   bo = bo.fit(this_dat, this_dat.Y);
 %   yfit = bo.predict(new_dat)
 
-classdef bayesOptCV < Estimator
+classdef bayesOptCV < baseEstimator
     properties
         bayesOptOpts = [];
         estimator = [];
@@ -61,7 +61,7 @@ classdef bayesOptCV < Estimator
         fitTime = -1;
     end
     
-    properties (Access = ?Estimator)
+    properties (Access = ?baseEstimator)
         hyper_params = {};
     end
     
@@ -110,7 +110,7 @@ classdef bayesOptCV < Estimator
                 assert(~isempty(ismember(params, hypname)), ...
                     sprintf('%s is not a valid hyperparameter for %s', hypname, class(obj.estimator)));
                 
-                obj.estimator.set_hyp(hypname, this_hyp.(hypname));
+                obj.estimator.set_params(hypname, this_hyp.(hypname));
             end
             
             obj.estimator.fit(dat, Y, varargin{:});
@@ -133,7 +133,7 @@ classdef bayesOptCV < Estimator
             yfit_null = obj.estimator.predict_null(varargin{:});
         end
         
-        function set_hyp(~, varargin)
+        function set_params(~, varargin)
             warning('bayesOptCV:get_params','This function has no hyperparameters to set. To set hyperparameters of obj.estimator call obj.fit() instead.');
         end
         
@@ -150,7 +150,7 @@ classdef bayesOptCV < Estimator
                 assert(~isempty(ismember(params, hypname)), ...
                     sprintf('%s is not a valid hyperparameter for bayes optimization', hypname));
                 
-                obj.estimator.set_hyp(hypname, this_hyp.(hypname));
+                obj.estimator.set_params(hypname, this_hyp.(hypname));
             end
             
             this_cv = crossValScore(obj.estimator, obj.cv, obj.scorer, 'repartOnFit', true, 'n_parallel', 1, 'verbose', false);
