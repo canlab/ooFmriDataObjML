@@ -42,7 +42,7 @@ classdef pipeline < baseEstimator & baseTransformer
                 if ischar(varargin{i})
                     switch varargin{i}
                         case 'verbose'
-                            obj.verbose = varargin{i}+1;
+                            obj.verbose = varargin{i+1};
                     end
                 end
             end
