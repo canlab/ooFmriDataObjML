@@ -24,7 +24,20 @@ classdef (Abstract) linearModelEstimator < baseEstimator
     
     methods
         function yfit_raw = score_samples(obj, X, varargin)
-            yfit_raw = X*obj.B + obj.offset;
+            if isempty(obj.B)
+                yfit_raw = repmat(obj.offset, size(X,1), 1);
+            else
+                try
+                    yfit_raw = X*obj.B + obj.offset;
+                catch e
+                    err = struct('identfier',e.identifier,'stack',e.stack,'message',...
+                        ['Problem with model fit. This may have been caused by inconsistent ',...
+                        'feature extraction across folds of an optimization cv loop. Try ',...
+                        'extracting features before optimization in pipeline if possible. ',...
+                        'Error was: ', e.message]);
+                    rethrow(err);                        
+                end
+            end
         end
         
         % for regressors this should be the mean observed value. For

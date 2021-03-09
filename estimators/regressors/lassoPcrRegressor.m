@@ -133,8 +133,11 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
         lassoCV_funhan = [];
     end
     
-    properties (Access = ?baseEstimator)
+    properties(SetAccess = ?baseEstimator)
         numcomponents = [];
+    end
+    
+    properties (Access = ?baseEstimator)
         hyper_params = {'numcomponents', 'lambda', 'alpha'};
     end
     
@@ -197,7 +200,7 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
                 numc = obj.numcomponents;
 
                 if obj.numcomponents > size(pc, 2)
-                    disp('WARNING!! Number of components requested is more than unique components in training data.');
+                    warning('Number of components requested (%d) is more than unique components in training data (%d)', obj.numcomponents, size(pc,2));
                     numc = size(pc, 2);
                 end
                 pc = pc(:, 1:numc);
