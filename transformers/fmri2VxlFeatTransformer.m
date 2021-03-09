@@ -200,7 +200,7 @@ classdef fmri2VxlFeatTransformer < baseTransformer
 
             % mask.dat has full list of voxels
             % need to find vox in both mask and original data mask
-
+%{
             if size(dat2.volInfo.image_indx, 1) == size(dat1.volInfo.image_indx, 1)
                 n = size(dat2.volInfo.image_indx, 1);
 
@@ -211,7 +211,7 @@ classdef fmri2VxlFeatTransformer < baseTransformer
                 if size(inmaskdat, 1) ~= n
                     inmaskdat = zeroinsert(~dat2.volInfo.image_indx, inmaskdat);
                 end
-
+                
                 inboth = inmaskdat & nonemptydat;
 
                 % List in space of in-mask voxels in dat object.
@@ -242,6 +242,19 @@ classdef fmri2VxlFeatTransformer < baseTransformer
             end
 
             dat1 = remove_empty(dat1, to_remove);
+            %}
+            
+            % this ia dirty fix. What we need is to remove voxels that
+            % aren't in the mask, but keep zero voxels from dat1 if they're
+            % in the mask.
+            if any(dat1.dat == 0)
+                dat1 = dat1.cat(dat2);
+                dat1 = remove_empty(dat1, ~inmaskdat);
+                idx = size(dat1.dat,2);
+                dat1 = dat1.get_wh_image(1:idx-1);
+            else
+                dat1 = remove_empty(dat1, ~inmaskdat);
+            end
         end
     end
 end

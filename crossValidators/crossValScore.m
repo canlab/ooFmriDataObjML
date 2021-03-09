@@ -147,6 +147,7 @@ classdef crossValScore < crossValidator & yFit
                         test_dat = X(obj.cvpart.test(i),:);
                     end
 
+                    
                     this_foldEstimator{i}.fit(train_dat, train_Y);
                     tmp_yfit_raw = this_foldEstimator{i}.score_samples(test_dat, 'fast', true);
 
