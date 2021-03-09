@@ -57,7 +57,7 @@ classdef uniRegressor < linearModelEstimator & modelRegressor
                 % X is brain, Y is outcome, for each voxel
                 xx = [ones(size(Y)) X(:, i)];
 
-                %b = pinv(X) * Y
+                %b = pinv(X) * Yz
                 b(i,:) = xx \ Y;   % should be same, but faster
             end
             

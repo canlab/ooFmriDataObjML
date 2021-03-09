@@ -98,8 +98,13 @@ classdef crossValPredict < crossValidator & yFit
                     obj.yfit(obj.fold_lbls == i) = this_foldEstimator{i}.predict(test_dat, 'fast', true);
                 end
             else
-                if ~isempty(gcp('nocreate')), delete(gcp('nocreate')); end
-                parpool(obj.n_parallel);
+                pool = gcp('nocreate');
+                if isempty(pool)
+                    parpool(obj.n_parallel);
+                elseif pool.NumWorkers ~= obj.n_parallel
+                    delete(gcp('nocreate')); 
+                    parpool(obj.n_parallel);
+                end
                 yfit = cell(obj.cvpart.NumTestSets,1);
                 parfor i = 1:obj.cvpart.NumTestSets
                     

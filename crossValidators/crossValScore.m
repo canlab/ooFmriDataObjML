@@ -84,6 +84,14 @@ classdef crossValScore < crossValidator & yFit
         scorer;
     end
     
+    properties (Hidden = true)
+        % function which when applied to X data object extracts metadata
+        % needed by scorer.
+        % idx correspond to fold indices
+        % Hidden because the interface is pretty hacky in ineligant.
+        scorer_metadata_constructor = @(X, idx)([]);
+    end
+    
     properties (Hidden = true, Access = private)
         cvpart0 = [];
         scorer0 = [];
@@ -96,11 +104,11 @@ classdef crossValScore < crossValidator & yFit
             obj.scorer = scorer;
         end
         
-        function obj = do(obj, dat, Y)
+        function obj = do(obj, X, Y)
             t0 = tic;
             if obj.repartOnFit || isempty(obj.cvpart)
                 try
-                    obj.cvpart = obj.cv(dat, Y);
+                    obj.cvpart = obj.cv(X, Y);
                 catch e
                     e = struct('message', sprintf([e.message, ...
                         '\nError occurred invoking %s.cv. Often this is due to misspecified ',...
@@ -131,12 +139,12 @@ classdef crossValScore < crossValidator & yFit
                     if obj.verbose, fprintf('Fold %d/%d\n', i, obj.cvpart.NumTestSets); end
 
                     train_Y = Y(~obj.cvpart.test(i));
-                    if isa(dat,'image_vector')
-                        train_dat = dat.get_wh_image(~obj.cvpart.test(i));
-                        test_dat = dat.get_wh_image(obj.cvpart.test(i));
+                    if isa(X,'image_vector')
+                        train_dat = X.get_wh_image(~obj.cvpart.test(i));
+                        test_dat = X.get_wh_image(obj.cvpart.test(i));
                     else
-                        train_dat = dat(~obj.cvpart.test(i),:);
-                        test_dat = dat(obj.cvpart.test(i),:);
+                        train_dat = X(~obj.cvpart.test(i),:);
+                        test_dat = X(obj.cvpart.test(i),:);
                     end
 
                     this_foldEstimator{i}.fit(train_dat, train_Y);
@@ -167,18 +175,23 @@ classdef crossValScore < crossValidator & yFit
                     obj.yfit_raw = [obj.yfit_raw; tmp_yfit_raw];
                 end
             else
-                if ~isempty(gcp('nocreate')), delete(gcp('nocreate')); end
-                parpool(obj.n_parallel);
+                pool = gcp('nocreate');
+                if isempty(pool)
+                    parpool(obj.n_parallel);
+                elseif pool.NumWorkers ~= obj.n_parallel
+                    delete(gcp('nocreate')); 
+                    parpool(obj.n_parallel);
+                end
                 yfit_raw = cell(obj.cvpart.NumTestSets,1);
                 parfor i = 1:obj.cvpart.NumTestSets
                     
                     train_Y = Y(~obj.cvpart.test(i));
-                    if isa(dat,'image_vector')
-                        train_dat = dat.get_wh_image(~obj.cvpart.test(i));
-                        test_dat = dat.get_wh_image(obj.cvpart.test(i));
+                    if isa(X,'image_vector')
+                        train_dat = X.get_wh_image(~obj.cvpart.test(i));
+                        test_dat = X.get_wh_image(obj.cvpart.test(i));
                     else
-                        train_dat = dat(~obj.cvpart.test(i),:);
-                        test_dat = dat(obj.cvpart.test(i),:);
+                        train_dat = X(~obj.cvpart.test(i),:);
+                        test_dat = X(obj.cvpart.test(i),:);
                     end
 
                     this_foldEstimator{i}.fit(train_dat, train_Y);
@@ -286,6 +299,8 @@ classdef crossValScore < crossValidator & yFit
                 
                 yfit = manual_yFit(fold_Y, fold_yfit_null, fold_yfit_raw);
                 yfit.classLabels = obj.classLabels;
+                yfit.set_null(fold_Y); % superfluous but needed to avoid errors if using normalized metrics.
+                yfit.metadata = obj.scorer_metadata_constructor(obj, obj.cvpart.test(i));
                 
                 obj.scores_null(i) = obj.scorer(yfit);
                 obj.yfit_null = [obj.yfit_null; fold_yfit_null];
@@ -318,6 +333,12 @@ classdef crossValScore < crossValidator & yFit
                 else
                     error('Unsupported base estimator type');
                 end
+                
+                if ~isempty(obj.yfit_null)
+                    yfit.set_null(obj.yfit_null(obj.cvpart.test(i)));
+                end
+                
+                yfit.metadata = obj.scorer_metadata_constructor(obj, obj.cvpart.test(i));
                 
                 obj.scores(i) = obj.scorer(yfit);
             end

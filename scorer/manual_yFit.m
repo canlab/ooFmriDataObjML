@@ -4,6 +4,11 @@
 classdef manual_yFit < yFit
     properties
         classLabels = [];
+        
+        % a useful placeholder where you can store information that might 
+        % be needed by a scorer, e.g. subject IDs for scoring within/between 
+        % subject effects
+        metadata = []; 
     end
     
     methods
