@@ -38,11 +38,11 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
                     switch(varargin{i})
                         case 'bt_dim'
                             bt_dim = varargin{i+1};
-                            assert(isinteger(bt_dim) && bt_dim >= 0 || isinf(bt_dim),'bt_dim must be positive integer or Inf');
+                            assert((round(bt_dim) == bt_dim && bt_dim >= 0) || isinf(bt_dim),'bt_dim must be positive integer or Inf');
                             obj.bt_dim = bt_dim;
                         case 'wi_dim'
                             wi_dim = varargin{i+1};
-                            assert(isinteger(wi_dim) && wi_dim >= 0 || isinf(wi_dim),'wi_dim must be positive integer or Inf');
+                            assert((round(wi_dim) == wi_dim && wi_dim >= 0) || isinf(wi_dim),'wi_dim must be positive integer or Inf');
                             obj.wi_dim = wi_dim;
                         case 'cpca'
                             cpca = varargin{i+1};
@@ -87,7 +87,7 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
             
             obj.Bb = bb(2:end);
             obj.Bw = bw(2:end);
-            obj.offset = obj.Bb(1);
+            obj.offset = bb(1);
             
             obj.isFitted = true;
             obj.fitTime = toc(t0);
