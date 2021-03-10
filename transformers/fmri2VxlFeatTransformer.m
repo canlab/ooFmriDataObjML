@@ -42,8 +42,8 @@
 %                       expect input data to be obs x feature, while
 %                       fmri_data objects are vxl x obs.
 %
-%       weights = get_weights(obj)
-%                   - combines brainModel with baseEstimator weights and
+%       weightMask = get_weightMask(obj)
+%                   - combines brainModel with baseEstimator weightMask and
 %                      returns the model in brain space. Useful for pattern
 %                      visualization.
 %
@@ -137,146 +137,80 @@ classdef fmri2VxlFeatTransformer < baseTransformer
             %   on novel data.
             assert(obj.isFitted, sprintf('Please call %s.fit() before %s.transform().\n',class(obj)));
             if ~fast
-                weights = obj.get_weights();
-                dat = obj.match_space(dat, weights);
+                weightMask = obj.get_weightMask();
+                
+                dat = obj.match_space(dat, weightMask);
             end
             
             dat = obj.featureConstructor(dat);
         end
         
-        function weights = get_weights(obj)
-            weights = obj.brainModel;
+        function weightMask = get_weightMask(obj)
+            weightMask = obj.brainModel;
             
-            weights.dat = ones(obj.datSize);
+            weightMask.dat = ones(obj.datSize);
         end
     end
     
-    methods (Static, Access = private)
-
-        % this was largely copied from apply_mask in canlabCore
-        % takes dat1 and ensures that it matches the space of dat2, then
-        % returns dat2. dat2 should be weights as an fmri_data object,
-        % using the fmri_data metdata from brainModel.
-        function dat1 = match_space(dat1, dat2)
-            isdiff = compare_space(dat1, dat2);
+    methods (Static)
+        function dat = match_space(dat, mask)
+            
+            isdiff = compare_space(dat, mask);
 
             if isdiff == 1 || isdiff == 2 % diff space, not just diff voxels
                 % == 3 is ok, diff non-empty voxels
 
-                % Both work, but resample_space does not require going back to original
-                % images on disk
-                dat2 = resample_space(dat2, dat1);
+                mask = resample_space(mask, dat);
 
-                % tor added may 1 - removed voxels was not legal otherwise
-                %mask.removed_voxels = mask.removed_voxels(mask.volInfo.wh_inmask);
-                % resample_space is not *always* returning legal sizes for removed
-                % vox? maybe this was updated to be legal
-
-                if length(dat2.removed_voxels) == dat2.volInfo.nvox
-                    disp('Warning: resample_space returned illegal length for removed voxels. Fixing...');
-                    dat2.removed_voxels = dat2.removed_voxels(dat2.volInfo.wh_inmask);
+                if length(mask.removed_voxels) == mask.volInfo.nvox
+                    warning('resample_space returned illegal length for removed voxels. Fixing...');
+                    mask.removed_voxels = mask.removed_voxels(mask.volInfo.wh_inmask);
                 end
             end
-            
 
-            % nonemptydat: Logical index of voxels with valid data, in in-mask space
-            nonemptydat = get_nonempty_voxels(dat1);
-
-            dat1 = replace_empty(dat1);
-
-            % Check/remove NaNs. This could be done in-object...
-            dat2.dat(isnan(dat2.dat)) = 0;
+            dat = replace_empty(dat);
 
             % Replace if necessary
-            dat2 = replace_empty(dat2);
+            mask = replace_empty(mask);
+
+            inmaskdat = logical(mask.dat);
+
             
-            % save which are in mask, but do not replace with logical, because mask may
-            % have weights we want to preserve
-            inmaskdat = logical(dat2.dat);
-
-
             % Remove out-of-mask voxels
             % ---------------------------------------------------
 
             % mask.dat has full list of voxels
             % need to find vox in both mask and original data mask
-%{
-            if size(dat2.volInfo.image_indx, 1) == size(dat1.volInfo.image_indx, 1)
-                n = size(dat2.volInfo.image_indx, 1);
 
-                if size(nonemptydat, 1) ~= n % should be all vox OR non-empty vox
-                    nonemptydat = zeroinsert(~dat1.volInfo.image_indx, nonemptydat);
-                end
+            if size(mask.volInfo.image_indx, 1) == size(dat.volInfo.image_indx, 1)
+                n = size(mask.volInfo.image_indx, 1);
 
                 if size(inmaskdat, 1) ~= n
-                    inmaskdat = zeroinsert(~dat2.volInfo.image_indx, inmaskdat);
+                    inmaskdat = zeroinsert(~mask.volInfo.image_indx, inmaskdat);
                 end
-                
-                inboth = inmaskdat & nonemptydat;
 
                 % List in space of in-mask voxels in dat object.
                 % Remove these from the dat object
-                to_remove = ~inboth(dat1.volInfo.wh_inmask);
+                to_remove = ~inmaskdat(dat.volInfo.image_indx);
 
-            elseif size(dat2.dat, 1) == size(dat1.volInfo.image_indx, 1)
+            elseif size(mask.dat, 1) == size(dat.volInfo.image_indx, 1)
+                
+                to_remove = ~inmaskdat(dat.volInfo.wh_inmask);
 
-                % mask vox are same as total image vox
-                nonemptydat = zeroinsert(~dat1.volInfo.image_indx, nonemptydat);
-                inboth = inmaskdat & dat1.volInfo.image_indx & nonemptydat;
-
-                % List in space of in-mask voxels in dat object.
-                to_remove = ~inboth(dat1.volInfo.wh_inmask);
-
-            elseif size(dat2.dat, 1) == size(dat1.volInfo.wh_inmask, 1)
-                % mask vox are same as in-mask voxels in dat
-                inboth = inmaskdat & dat1.volInfo.image_indx(dat1.volInfo.wh_inmask) & nonemptydat;
-
-                % List in space of in-mask voxels in .dat field.
-                to_remove = ~inboth;
+            elseif size(mask.dat, 1) == size(dat.volInfo.wh_inmask, 1)
+              
+                to_remove = ~inmaskdat;
 
             else
                 fprintf('Sizes do not match!  Likely bug in resample_to_image_space.\n')
-                fprintf('Vox in mask: %3.0f\n', size(dat2.dat, 1))
-                fprintf('Vox in dat - image volume: %3.0f\n', size(dat1.volInfo.image_indx, 1));
-                fprintf('Vox in dat - image in-mask area: %3.0f\n', size(dat1.volInfo.wh_inmask, 1));
+                fprintf('Vox in mask: %3.0f\n', size(mask.dat, 1))
+                fprintf('Vox in dat - image volume: %3.0f\n', size(dat.volInfo.image_indx, 1));
+                fprintf('Vox in dat - image in-mask area: %3.0f\n', size(dat.volInfo.wh_inmask, 1));
             end
 
-            dat1 = remove_empty(dat1, to_remove);
-            %}
-            
-            % this ia dirty fix. What we need is to remove voxels that
-            % aren't in the mask, but keep zero voxels from dat1 if they're
-            % in the mask.
-            if any(dat1.dat == 0)
-                dat1 = dat1.cat(dat2);
-                dat1 = remove_empty(dat1, ~inmaskdat);
-                idx = size(dat1.dat,2);
-                dat1 = dat1.get_wh_image(1:idx-1);
-            else
-                dat1 = remove_empty(dat1, ~inmaskdat);
-            end
+            % keep overall list
+            dat.removed_voxels = to_remove;
+            dat.dat(to_remove,:) = [];
         end
     end
-end
-
-
-% shamelyessly ripped off from canlabCore's apply_mask()
-function nonemptydat = get_nonempty_voxels(dat)
-empty_voxels = all(dat.dat' == 0 | isnan(dat.dat'), 1)';
-
-if size(empty_voxels, 1) == dat.volInfo.n_inmask
-    % .dat is full in-mask length, we have not called remove_voxels or there are none to remove
-    nonemptydat = ~empty_voxels;
-    
-elseif length(dat.removed_voxels) == dat.volInfo.n_inmask
-    % .dat is not in-mask length, and we have .removed_voxels defined
-    nonemptydat = false(dat.volInfo.n_inmask, 1);
-    nonemptydat(~dat.removed_voxels) = true;
-    
-    % additional: we could have invalid voxels that have been changed/added since
-    % remove_empty was last called.
-    %     dat.removed_voxels(dat.removed_voxels) =
-    %     nonemptydat(empty_voxels
-end
-
 end
