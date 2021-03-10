@@ -346,8 +346,19 @@ classdef crossValScore < crossValidator & yFit
             obj.evalTimeScorer = toc(t0);
         end
                 
-        function obj = repartition(obj)
+        function repartition(obj)
             obj.cvpart = obj.cvpart.repartition;
+            
+            obj.yfit = [];
+            obj.yfit_null = [];
+            obj.evalTime = -1;
+            obj.fold_lbls = [];
+            obj.is_done = false;
+
+            obj.evalTimeFits = -1;
+            obj.evalTimeScorer = -1;
+            obj.scores = [];
+            obj.scores_null = [];
         end
         
         %% dependent methods
