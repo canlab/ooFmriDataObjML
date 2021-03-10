@@ -62,7 +62,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         regularization;
     end  
     
-    properties (Dependent, SetAccess=private)
+    properties (Dependent, SetAccess=protected)
         learner;
         
         B;
@@ -81,7 +81,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         scoreFcn0 = @(x1)(x1);
     end
     
-    properties (SetAccess = private)                
+    properties (SetAccess = protected)                
         isFitted = false;
         fitTime = -1;
         

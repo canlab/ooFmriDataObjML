@@ -60,7 +60,7 @@ classdef svmClf < modelClf
         scoreFcn0 = @(x1)(x1);
     end
     
-    properties (SetAccess = private)                
+    properties (SetAccess = protected)                
         isFitted = false;
         fitTime = -1;
         
@@ -71,7 +71,7 @@ classdef svmClf < modelClf
         hyper_params = {'kernel', 'kernelScale', 'order', 'nu'};
     end
           
-    properties (Dependent = true, SetAccess = private)
+    properties (Dependent = true, SetAccess = protected)
         classLabels;
         offset;
     end

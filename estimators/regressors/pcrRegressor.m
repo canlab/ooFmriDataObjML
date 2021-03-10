@@ -3,7 +3,7 @@ classdef pcrRegressor < linearModelEstimator & modelRegressor
         numcomponents = [];
     end
     
-    properties (SetAccess = private)                
+    properties (SetAccess = protected)                
         isFitted = false;
         fitTime = -1;
         

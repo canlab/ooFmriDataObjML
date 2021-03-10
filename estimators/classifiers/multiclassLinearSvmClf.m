@@ -61,7 +61,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         intercept
     end
     
-    properties (Dependent, SetAccess = private)        
+    properties (Dependent, SetAccess = protected)        
         learner;
         
         B;
@@ -81,7 +81,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         scoreFcn0 = @(x1)(x1);
     end
     
-    properties (SetAccess = private)         
+    properties (SetAccess = protected)         
         NClasses = 2;
         nClf = 1;
         

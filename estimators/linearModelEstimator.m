@@ -15,7 +15,7 @@ classdef (Abstract) linearModelEstimator < baseEstimator
     % These will usually be suitable defaults
     %   B = [];
     %   offset = 0;
-    properties (Abstract, SetAccess = private)
+    properties (Abstract, SetAccess = protected)
         B;
         offset;
 

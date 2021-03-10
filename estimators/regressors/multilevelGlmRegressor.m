@@ -43,7 +43,7 @@ classdef multilevelGlmRegressor < linearModelEstimator & modelRegressor
         numcomponents = 1;
     end
     
-    properties (SetAccess = private)   
+    properties (SetAccess = protected)   
         get_batch_id = @(X)(X.metadata.subject_id);
         get_secondlvl_reg = [];
 

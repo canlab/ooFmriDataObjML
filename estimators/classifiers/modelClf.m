@@ -10,11 +10,11 @@ classdef (Abstract) modelClf < baseEstimator
         prior;
     end
     
-    properties (Abstract, SetAccess = private)
+    properties (Abstract, SetAccess = protected)
         classLabels;
     end
     
-    properties (SetAccess = private)
+    properties (SetAccess = protected)
         offset_null = 0;
     end
     

@@ -121,7 +121,7 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
         alpha
     end
     
-    properties (SetAccess = private)                
+    properties (SetAccess = protected)                
         isFitted = false;
         fitTime = -1;  
         lassoParams = {};

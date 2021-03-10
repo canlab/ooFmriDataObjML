@@ -9,7 +9,7 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
         fitlmeOpts = {'CovariancePattern','isotropic'};
     end
     
-    properties (SetAccess = private)                
+    properties (SetAccess = protected)                
         isFitted = false;
         fitTime = -1;
         
@@ -23,7 +23,7 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
         offset_null = 0;
     end
     
-    properties (Dependent = true, SetAccess = private)
+    properties (Dependent = true, SetAccess = protected)
         B;
     end
     

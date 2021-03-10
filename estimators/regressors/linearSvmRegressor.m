@@ -52,7 +52,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
         C = []; % defaults to 1 if neither C nor Lambda are found by the constructor
     end
     
-    properties (Dependent, SetAccess = private)
+    properties (Dependent, SetAccess = protected)
         learner;
         B;
         offset;
@@ -65,7 +65,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
         regularization;
     end  
     
-    properties (SetAccess = private)                
+    properties (SetAccess = protected)                
         isFitted = false;
         fitTime = -1;
         
