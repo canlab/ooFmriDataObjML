@@ -153,8 +153,8 @@ classdef (Abstract) crossValidator < yFit
                         end
                     end
                 end        
-                obj.yfit_raw = cvObj.yfit;
-                obj = obj.eval_score();
+                obj.yfit_raw = cvObj.yfit(:);
+                obj.eval_score();
             elseif isa(this_baseEstimator, 'modelClf')
                 error('crossValPredict objects with modelClf as their base estimators cannot be converted to crossValScore.');
             else

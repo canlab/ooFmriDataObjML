@@ -1,21 +1,19 @@
 % crossValScore computes cross validated prediction and evaluates a
 % performance metric for each fold, saved in crossValScore.scores.
-% inherits crossValPredict, so see help for crossValPredict as well in 
-% case this help is out of date.
 %
-% cvEstimator = crossValScore(estimator, cv, varargin)
+% cvEstimator = crossValScore(estimator, cv, scorer, varargin)
 %
-% estimator - an fmriDataEstimator object
+% estimator - a baseEstimator type object
 %
-% cv    - a function handle to a method that takes an fmri_data and target
-%           value as input, cv(fmri_data, Y) and returns a cvpartition
+% cv    - a function handle to a method that takes an (X,Y) value as input,
+%           e.g. cv(fmri_data, Y), and returns a cvpartition
 %           object. Any fields of fmri_data referenced must be preserved
 %           across obj.cat and obj.get_wh_image() invocations.
 %
 % scorer - a function handle to a yFit scorer that takes a yfit object as
 %           input and returns a scalar value estimate of performance. This
-%           should not be fold aware. crossValScore will handle repeated
-%           application across CV folds.
+%           should be fairly naive and not fold aware. crossValScore will 
+%           handle repeated application across CV folds.
 %
 % (optional)
 %

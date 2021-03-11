@@ -130,6 +130,7 @@ classdef crossValPredict < crossValidator & yFit
                     obj.yfit(obj.fold_lbls == i) = yfit{i};
                 end
             end
+            obj.yfit = obj.yfit(:);
             
             obj.foldEstimator = this_foldEstimator;
             obj.evalTime = toc(t0);
