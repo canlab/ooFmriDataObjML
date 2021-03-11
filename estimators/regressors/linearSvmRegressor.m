@@ -114,7 +114,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
                 end
             end
             % we don't let fitrlinearOpts set these directly because
-            % setting these in turn will modify fitclineearOpts, and who
+            % setting these in turn will modify fitrlinearOpts, and who
             % knows what kind of strange behavior that feedback may cause
             % down the line. Better to have it in two separate invocations.
             obj.intercept = intercept;
@@ -133,7 +133,7 @@ classdef linearSvmRegressor < linearModelEstimator & modelRegressor
                             end
                         case 'epsilon'
                             if any(strcmp(obj.fitrlinearOpts, 'Epsilon'))
-                                warning('Overriding firlinearOpts epsilon = %0.3f with linearSvmRegressor epsilon = 0.3%f',obj.epsilon, varargin{i+1});
+                                warning('Overriding firlinearOpts epsilon = %0.3f with linearSvmRegressor epsilon = %0.3f',obj.epsilon, varargin{i+1});
                             end
                             obj.epsilon = varargin{i+1};
                         case 'regularization'

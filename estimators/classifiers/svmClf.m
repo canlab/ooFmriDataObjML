@@ -185,7 +185,7 @@ classdef svmClf < modelClf
         
         function yfit = predict(obj, X)
             yfit = obj.Mdl.predict(double(X));
-            yfit(yfit == 0) = -1;
+            %yfit(yfit == 0) = -1;
         end
         
         function d = decisionFcn(~, scores)
