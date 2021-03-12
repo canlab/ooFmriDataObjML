@@ -2,7 +2,7 @@
 % is sensitive to certain types of data charactreistics. sani_for_combat is used
 % to modify the data before combat is used. Please refer to that function in
 % utils for details
-classdef combatTransformer < baseTransformer
+classdef fmriDataCombatTransformer < baseTransformer
     properties
         combat_opts = {[], 1};
     end
@@ -23,7 +23,7 @@ classdef combatTransformer < baseTransformer
     end
     
     methods
-        function obj = combatTransformer(batch_id_funhan, combat_opts)
+        function obj = fmriDataCombatTransformer(batch_id_funhan, combat_opts)
             if any(cellfun(@(x1)(ischar(x1) && strcmp(x1,'ref_idx')), combat_opts))
                 idx = find(cellfun(@(x1)(ischar(x1) && strcmp(x1,'ref_idx')), combat_opts));
                 combat_opts{idx:idx+1} = [];

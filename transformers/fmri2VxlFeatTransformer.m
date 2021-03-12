@@ -69,7 +69,7 @@
 
 classdef fmri2VxlFeatTransformer < baseTransformer
     properties (SetAccess = private)
-        featureConstructor = @(X)(features(X.dat'));
+        metadataConstructor = @(X)(features(X.dat'));
                 
         brainModel = fmri_data();
         datSize = [1,1];
@@ -87,8 +87,8 @@ classdef fmri2VxlFeatTransformer < baseTransformer
             for i = 1:length(varargin)
                 if ischar(varargin{i})
                     switch varargin{i}
-                        case 'featureConstructor_funhan'
-                            obj.featureConstructor = varargin{i+1};
+                        case 'constructorConstructor_funhan'
+                            obj.metadataConstructor = varargin{i+1};
                         otherwise
                             warning('Did not understand input %s to fmri2VxlFeatTransformer', varargin{i});
                     end
@@ -142,7 +142,7 @@ classdef fmri2VxlFeatTransformer < baseTransformer
                 dat = obj.match_space(dat, weightMask);
             end
             
-            dat = obj.featureConstructor(dat);
+            dat = features(dat.dat', obj.metadataConstructor(dat));
         end
         
         function weightMask = get_weightMask(obj)
