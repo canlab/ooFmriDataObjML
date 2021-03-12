@@ -93,6 +93,46 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
             obj.fitTime = toc(t0);
         end
         
+        % for compatibility with bayesian optimizatoin categorical
+        % optimizableVariable
+        function set.randInt(obj, val)
+            if ischar(val)
+                switch(val)
+                    case 'true'
+                        obj.randInt = true;
+                    case 'false'
+                        obj.randInt = false;
+                    otherwise
+                        error('randInt must be true/false');
+                end
+            elseif categorical(true) == val
+                obj.randInt = true;
+            elseif categorical(false) == val
+                obj.randInt = false;
+            else
+                obj.randInt = val;
+            end
+        end
+        
+        function set.randSlope(obj, val)
+            if ischar(val)
+                switch(val)
+                    case 'true'
+                        obj.randInt = true;
+                    case 'false'
+                        obj.randInt = false;
+                    otherwise
+                        error('randInt must be true/false');
+                end
+            elseif categorical(true) == val
+                obj.randInt = true;
+            elseif categorical(false) == val
+                obj.randInt = false;
+            else
+                obj.randInt = val;
+            end
+        end
+        
         %% dependent methods
         function val = get.B(obj)
             val = obj.Bb + obj.Bw;
