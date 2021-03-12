@@ -58,7 +58,7 @@ classdef svmRegressor < modelRegressor
     end
     
     properties (Access = ?baseEstimator)
-        hyper_params = {'kernel', 'kernelScale', 'order', 'epsilon'};
+        hyper_params = {'kernel', 'scale', 'order', 'epsilon'};
     end
           
     
@@ -235,9 +235,11 @@ classdef svmRegressor < modelRegressor
         
         function val = get.order(obj)
             order_idx = find(strcmp(obj.fitrsvmOpts, 'PolynomialOrder'));
-            assert(~isempty(order_idx), 'PolynomialOrder not specified in fitrsvmOpts. This is strange.');
-            
-            val = obj.fitrsvmOpts{order_idx+1};
+            if isempty(order_idx)
+                val = [];
+            else
+                val = obj.fitrsvmOpts{order_idx+1};
+            end
         end
         
         function set.scale(obj, val)      
@@ -255,9 +257,11 @@ classdef svmRegressor < modelRegressor
         
         function val = get.scale(obj)
             scale_idx = find(strcmp(obj.fitrsvmOpts, 'KernelScale'));
-            assert(~isempty(scale_idx), 'KernelScale not specified in fitrsvmOpts. This is strange.');
-            
-            val = obj.fitrsvmOpts{scale_idx+1};
+            if isempty(scale_idx)
+                val = [];
+            else
+                val = obj.fitrsvmOpts{scale_idx+1};
+            end
         end
     end
 end

@@ -87,7 +87,7 @@ classdef fmri2VxlFeatTransformer < baseTransformer
             for i = 1:length(varargin)
                 if ischar(varargin{i})
                     switch varargin{i}
-                        case 'constructorConstructor_funhan'
+                        case 'metadataConstructor_funhan'
                             obj.metadataConstructor = varargin{i+1};
                         otherwise
                             warning('Did not understand input %s to fmri2VxlFeatTransformer', varargin{i});
