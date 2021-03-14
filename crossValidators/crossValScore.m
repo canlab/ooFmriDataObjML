@@ -134,7 +134,7 @@ classdef crossValScore < crossValidator & yFit
             end
             if obj.n_parallel <= 1            
                 for i = 1:obj.cvpart.NumTestSets
-                    if obj.verbose, fprintf('Fold %d/%d\n', i, obj.cvpart.NumTestSets); end
+                    if obj.verbose, fprintf('Evaluating fold %d/%d\n', i, obj.cvpart.NumTestSets); end
 
                     train_Y = Y(~obj.cvpart.test(i));
                     if isa(X,'image_vector')
@@ -145,7 +145,6 @@ classdef crossValScore < crossValidator & yFit
                         test_dat = X(obj.cvpart.test(i),:);
                     end
 
-                    
                     this_foldEstimator{i}.fit(train_dat, train_Y);
                     tmp_yfit_raw = this_foldEstimator{i}.score_samples(test_dat, 'fast', true);
 

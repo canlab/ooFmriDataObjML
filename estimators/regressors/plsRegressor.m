@@ -30,7 +30,19 @@ classdef plsRegressor < linearModelEstimator & modelRegressor
         
         function fit(obj, X, Y)
             t0 = tic;
-            assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
+            
+            [n,dx] = size(X);
+            ny = size(Y,1);
+            assert(ny == n, 'length(Y) ~= size(X, 1)');
+
+            % Return at most maxncomp PLS components
+            maxncomp = min(n-1,dx);
+            if maxncomp < obj.numcomponents
+                warning('%d components requested but only %d possible. Using %d', ...
+                    obj.numcomponents, maxncomp, maxncomp);
+                obj.numcomponents = maxncomp;
+            end
+            
             obj.offset_null = mean(Y);
             
             if ~isempty(obj.numcomponents)
