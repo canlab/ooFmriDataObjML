@@ -36,13 +36,30 @@ classdef fmriDataCombatTransformer < baseTransformer
         
         function fit(obj, dat, varargin)
             t0 = tic;
-            [~,~,batch_id] = unique(obj.get_batch_id(dat),'stable');
+            batch_id = categorical(obj.get_batch_id(dat));
             
             % make sure dat and batch id have sensible sizes
             assert(size(dat.dat,2) == length(batch_id), 'dat be length(bach_id) x m');
             assert(ismatrix(dat.dat));
+                      
+            min_n = 3;
+            for i = 1:length(obj.combat_opts)
+                if ischar(obj.combat_opts{i}) && strcmp(obj.combat_opts{i},'meanOnly')
+                    if varargin{i+1} == 1
+                        min_n = 2;
+                    end
+                end
+            end
+            [uniq_batch,b] = unique(batch_id);
+            b(end+1) = length(batch_id)+1;
+            n_batches = diff(b);
+            bad_idx = find(n_batches < min_n);
+            if any(bad_idx)
+                warning('We should have minimum %d df to apply combat, but batch %s (and possibly others) only has %d instances.', ...
+                    min_n, char(uniq_batch(bad_idx(1))), n_batches(bad_idx(1)));
+            end
             
-            obj.pick_ref_batch(dat, batch_id);
+            obj.pick_ref_batch(dat, batch_id);            
             [~, grand_mean, var_pooled, B_hat] = evalc(['obj.get_ref_batch_params(',...
                 'dat.dat, batch_id, obj.combat_opts{:}, ''ref'', obj.ref_batch_id)']);
                         
@@ -76,7 +93,7 @@ classdef fmriDataCombatTransformer < baseTransformer
         function cb_dat = transform(obj, dat)
             assert(obj.isFitted,'Please call combatTransformer.fit() before combatTransformer.transform().');
             
-            [~,~,batch_id] = unique(obj.get_batch_id(dat),'stable');
+            batch_id = categorical(obj.get_batch_id(dat));
             
             % make sure dat and batch id have sensible sizes
             assert(size(dat.dat,2) == length(batch_id), 'dat be length(bach_id) x m');
@@ -87,22 +104,29 @@ classdef fmriDataCombatTransformer < baseTransformer
             else
                 assert(ismatrix(dat.dat));
             end
-                        
             
-            % append reference batch params to list, and remove problematic 
+            % check that we have necessary degrees of freedom
+            %{
+            %}
+            
+            % append reference batch params to list to remove problematic 
             % voxels in side by side comparison
             n = size(dat.dat,2);
             dat = dat.cat(obj.ref_params).remove_empty();
             
-            [~, ~, batch_id] = unique(batch_id,'stable');
-            tmp_ref_id = max(batch_id) + 1;
-            batch_id = [batch_id(:)', tmp_ref_id*ones(1,size(obj.ref_params.dat,2))];
+            batch_id = categorical(batch_id);
+            tmp_ref_id = categorical(max(double(batch_id)) + 1);
+            while ismember(tmp_ref_id, batch_id)
+                % make sure this is unique, should be but just in case
+                tmp_ref_id = categorical(double(tmp_ref_id) + 1);
+            end
+            batch_id = [batch_id(:)', repmat(tmp_ref_id,1,size(obj.ref_params.dat,2))];
             
             % 'sanitizes' data for combat
             dat = sani_for_combat(dat, batch_id);
             dat = dat.remove_empty();
             
-            % retrieve params
+            % retrieve the spatially updated params
             grand_mean = dat.dat(:,n+1)';
             var_pooled = dat.dat(:,n+2);
             if size(dat.dat,2) > n + 2
@@ -111,9 +135,10 @@ classdef fmriDataCombatTransformer < baseTransformer
                 B_hat = [];
             end
             
-            % apply combat
+            % apply combat to subset of data that doesn't include the
+            % appended params (supply params explicitly as fxn args)
             [~, dat.dat(:,1:n)] = evalc(['obj.refCombat(grand_mean, var_pooled, B_hat, ',...
-                'dat.dat(:,1:n), batch_id(1:n), obj.combat_opts{:})']);
+                    'dat.dat(:,1:n), batch_id(1:n), obj.combat_opts{:})']);
             assert(all(all(~isnan(dat.dat))),...
                 'One of the images returned all NaNs after combat correction. This may indicate a bug in sani_for_combat(), or some gross irregularity in your data, some kind of missing data perhaps?.');
             
@@ -208,7 +233,7 @@ classdef fmriDataCombatTransformer < baseTransformer
                             if ~ismember(ref,batch)
                                 error('Reference is not in batch list, please check inputs');
                             else
-                                if ischar(ref)
+                                if ischar(ref) || iscategorical(ref)
                                     fprintf('[combat] Harmonizing to reference batch %s\n', ref);
                                 elseif isnumeric(ref) || islogical(ref)
                                     fprintf('[combat] Harmonizing to reference batch %d\n', ref);
@@ -300,10 +325,10 @@ classdef fmriDataCombatTransformer < baseTransformer
             %    keyboard
             %end
             
-            B_hat = B_hat(n_batches+1:end,:); % drop subject specific intercepts
+            B_hat = B_hat(n_batch+1:end,:); % drop subject specific intercepts
         end
         
-        function bayesdata = refCombat(~, grand_mean, var_pooled, B_hat, dat, batch, mod, parametric, varargin)
+        function bayesdata = refCombat(obj, grand_mean, var_pooled, B_hat, dat, batch, mod, parametric, varargin)
             if any(isnan(dat(:)))
                 error('Input data contains nan entries. These will break combat. Please fix and rerun');
             end
@@ -382,6 +407,15 @@ classdef fmriDataCombatTransformer < baseTransformer
                 stand_mean = stand_mean+(tmp*B_hat)';
             end	
             s_data = (dat-stand_mean)./(sqrt(var_pooled)*repmat(1,1,n_array));
+            
+            ignoreBatch = [];
+            if ismember(obj.ref_batch_id, batch)
+                sums = sum(s_data(:,batch == obj.ref_batch_id),2);
+                if sum(abs(sums)) < 1e-07
+                    % reference batch likely
+                    ignoreBatch = obj.ref_batch_id;
+                end
+            end
 
             %Get regression batch effect parameters
             fprintf('[combat] Fitting L/S model and finding priors\n')
@@ -416,7 +450,16 @@ classdef fmriDataCombatTransformer < baseTransformer
                         delta_star = [delta_star; ones(1,size(gamma_hat(i,:),2))];
                     else
                         indices = batches{i};
-                        temp = itSol(s_data(:,indices),gamma_hat(i,:),delta_hat(i,:),gamma_bar(i),t2(i),a_prior(i),b_prior(i), 0.001);
+                        if ~isempty(ignoreBatch) && ignoreBatch == batch(indices(1))
+                            % this is the reference batch, should only find
+                            % ourselves here in fit_transform()
+                            % invocations, or manually transforming the
+                            % fitting sample.
+                            temp = zeros(2,size(s_data,1)); % mean adjustment
+                            temp(2,:) = 1; % variance scaling
+                        else
+                            temp = itSol(s_data(:,indices),gamma_hat(i,:),delta_hat(i,:),gamma_bar(i),t2(i),a_prior(i),b_prior(i), 0.001);
+                        end
                         gamma_star = [gamma_star; temp(1,:)];
                         delta_star = [delta_star; temp(2,:)];
                     end
