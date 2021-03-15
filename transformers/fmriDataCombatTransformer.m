@@ -154,11 +154,12 @@ classdef fmriDataCombatTransformer < baseTransformer
         
     methods (Access = private)
         function pick_ref_batch(obj, dat, batch_id)
+            batch_id = categorical(batch_id);
             [uniq_batch_id, exp_batch_id] = unique(batch_id,'stable');
 
             % skip picking representative batch if we only have one batch
             if length(exp_batch_id) == 1
-                obj.ref_batch_id = exp_batch_id(1);
+                obj.ref_batch_id = categorical(uniq_batch_id(exp_batch_id(1)));
                 return 
             end
             
@@ -213,9 +214,10 @@ classdef fmriDataCombatTransformer < baseTransformer
             if ns>0
                 error('Error. There are rows with constant values across samples. Remove these rows and rerun.')
             end
-            if ischar(batch) % needed for sort function to work reliably
-                batch = cellstr(batch);
-            end
+            %if ischar(batch) % needed for sort function to work reliably
+            %    batch = cellstr(batch);
+            %end
+            batch = categorical(batch);
 
             ref = [];
             meanOnly = false;
@@ -334,9 +336,10 @@ classdef fmriDataCombatTransformer < baseTransformer
             if ns>0
                 error('Error. There are rows with constant values across samples. Remove these rows and rerun ComBat.')
             end
-            if ischar(batch) % needed for sort function to work reliably
-                batch = cellstr(batch);
-            end
+            %if ischar(batch) % needed for sort function to work reliably
+            %    batch = cellstr(batch);
+            %end
+            batch = categorical(batch);
 
             meanOnly = false;
             for i = 1:length(varargin)
