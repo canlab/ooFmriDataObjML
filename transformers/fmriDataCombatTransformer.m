@@ -39,7 +39,7 @@ classdef fmriDataCombatTransformer < baseTransformer
             batch_id = categorical(obj.get_batch_id(dat));
             
             % make sure dat and batch id have sensible sizes
-            assert(size(dat.dat,2) == length(batch_id), 'dat be length(bach_id) x m');
+            assert(size(dat.dat,2) == length(batch_id), 'dat should be length(bach_id) x m');
             assert(ismatrix(dat.dat));
                       
             min_n = 3;
@@ -55,7 +55,7 @@ classdef fmriDataCombatTransformer < baseTransformer
             n_batches = diff(b);
             bad_idx = find(n_batches < min_n);
             if any(bad_idx)
-                warning('We should have minimum %d df to apply combat, but batch %s (and possibly others) only has %d instances.', ...
+                warning('We should have minimum %d df to apply combat, but batch %s (and possibly others) only has %d instances. Location and (if applicable) scale adjustments are likely to be very imprecise.', ...
                     min_n, char(uniq_batch(bad_idx(1))), n_batches(bad_idx(1)));
             end
             
@@ -104,10 +104,6 @@ classdef fmriDataCombatTransformer < baseTransformer
             else
                 assert(ismatrix(dat.dat));
             end
-            
-            % check that we have necessary degrees of freedom
-            %{
-            %}
             
             % append reference batch params to list to remove problematic 
             % voxels in side by side comparison
@@ -408,6 +404,11 @@ classdef fmriDataCombatTransformer < baseTransformer
             end	
             s_data = (dat-stand_mean)./(sqrt(var_pooled)*repmat(1,1,n_array));
             
+            % if the referece batch is included in the data to be
+            % harmonized (e.g. say this is the model fitting loop of a 
+            % harmonized model fitting procedure) let's flag it to make 
+            % some specific corrections to the reference batch 
+            % harmonization factors later.
             ignoreBatch = [];
             if ismember(obj.ref_batch_id, batch)
                 sums = sum(s_data(:,batch == obj.ref_batch_id),2);
@@ -450,16 +451,7 @@ classdef fmriDataCombatTransformer < baseTransformer
                         delta_star = [delta_star; ones(1,size(gamma_hat(i,:),2))];
                     else
                         indices = batches{i};
-                        if ~isempty(ignoreBatch) && ignoreBatch == batch(indices(1))
-                            % this is the reference batch, should only find
-                            % ourselves here in fit_transform()
-                            % invocations, or manually transforming the
-                            % fitting sample.
-                            temp = zeros(2,size(s_data,1)); % mean adjustment
-                            temp(2,:) = 1; % variance scaling
-                        else
-                            temp = itSol(s_data(:,indices),gamma_hat(i,:),delta_hat(i,:),gamma_bar(i),t2(i),a_prior(i),b_prior(i), 0.001);
-                        end
+                        temp = itSol(s_data(:,indices),gamma_hat(i,:),delta_hat(i,:),gamma_bar(i),t2(i),a_prior(i),b_prior(i), 0.001);
                         gamma_star = [gamma_star; temp(1,:)];
                         delta_star = [delta_star; temp(2,:)];
                     end
@@ -479,6 +471,19 @@ classdef fmriDataCombatTransformer < baseTransformer
                     delta_star = [delta_star; temp(2,:)];
                 end
             end
+            
+            if ~isempty(ignoreBatch)
+                % these will only be approximatley 0 and 1, better to
+                % manually fix them to avoid surprising people with trivial
+                % deviations, but let's make sue they are in fact trival
+                % first.
+                if nanmean(abs(gamma_star(ismember(uniq_batch, ignoreBatch),:))) >= 0.01 || ...
+                        nanmean(abs(delta_star(ismember(uniq_batch, ignoreBatch),:) - ones(1,size(delta_star,2)))) >= 0.1
+                    warning('Reference-like batch detected during fmriDataCombatTransformer.transform() execution, but estimated corrections deviate from identity. This indicates a possible EB convergence failure.')
+                end
+                gamma_star(ismember(uniq_batch, ignoreBatch),:) = 0;
+                delta_star(ismember(uniq_batch, ignoreBatch),:) = 1;
+            end                
 
             fprintf('[combat] Adjusting the Data\n')
             bayesdata = s_data;
