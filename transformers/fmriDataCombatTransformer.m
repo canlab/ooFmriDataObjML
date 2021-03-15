@@ -45,9 +45,7 @@ classdef fmriDataCombatTransformer < baseTransformer
             min_n = 3;
             for i = 1:length(obj.combat_opts)
                 if ischar(obj.combat_opts{i}) && strcmp(obj.combat_opts{i},'meanOnly')
-                    if varargin{i+1} == 1
-                        min_n = 2;
-                    end
+                    min_n = 2;
                 end
             end
             [uniq_batch,b] = unique(batch_id);
