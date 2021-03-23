@@ -160,11 +160,11 @@ classdef fmri2VxlFeatTransformer < baseTransformer
             if isdiff == 1 || isdiff == 2 % diff space, not just diff voxels
                 % == 3 is ok, diff non-empty voxels
 
-                mask = resample_space(mask, dat);
+                dat = resample_space(dat, mask);
 
-                if length(mask.removed_voxels) == mask.volInfo.nvox
+                if length(dat.removed_voxels) == dat.volInfo.nvox
                     warning('resample_space returned illegal length for removed voxels. Fixing...');
-                    mask.removed_voxels = mask.removed_voxels(mask.volInfo.wh_inmask);
+                    dat.removed_voxels = dat.removed_voxels(dat.volInfo.wh_inmask);
                 end
             end
 

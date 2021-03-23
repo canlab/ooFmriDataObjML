@@ -165,21 +165,21 @@ classdef pipeline < baseEstimator & baseTransformer
         end
         
         function obj = set_transformer(obj,transformers)
-            obj.transformer = {};
+            obj.transformers = {};
             obj.transformer_names = {};
             
             for i = 1:length(transformers)
-                assert(isa(transformers{i}{2}, 'Transformer'), 'All steps must be transformers');
+                assert(isa(transformers{i}{2}, 'baseTransformer'), 'All steps must be transformers');
                 
                 obj.transformer_names{end+1} = transformers{i}{1};
                 obj.transformers{end+1} = copy(transformers{i}{2});
             end
             
-            obj.isFitted = false;
+            %obj.isFitted = false;
         end
         
         function obj = set_estimator(obj,estimator)       
-            assert(isa(estimator{2}, 'Estimator'), 'estimator must be type Estimator');
+            assert(isa(estimator{2}, 'baseEstimator'), 'estimator must be type Estimator');
 
             obj.estimator_name = estmator{1};
             obj.estimator = copy(estimator{2});
