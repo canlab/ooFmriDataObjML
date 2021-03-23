@@ -189,14 +189,15 @@ classdef pipeline < baseEstimator & baseTransformer
     end
     
     methods (Access = protected)
-        function obj = copyElement(obj)
-            obj = copyElement@matlab.mixin.Copyable(obj);
+        function newObj = copyElement(obj)
+            newObj = copyElement@matlab.mixin.Copyable(obj);
             
             fnames = fieldnames(obj);
             for i = 1:length(fnames)
-                
-                if isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
-                    obj.(fnames{i}) = copy(obj.(fnames{i}));
+                if isa(obj.(fnames{i}), 'cell')
+                    newObj.(fnames{i}) = obj.copyCell(obj.(fnames{i}));
+                elseif isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
+                    newObj.(fnames{i}) = copy(obj.(fnames{i}));
                 elseif isa(obj.(fnames{i}), 'handle') % implicitly: & ~isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
                     % the issue here is that fuction handles that are
                     % copied can contain references to the object they
@@ -205,6 +206,21 @@ classdef pipeline < baseEstimator & baseTransformer
                     % becaues matlab cannot parse these function handles
                     % appropriately.
                     warning('%s.%s is a handle but not copyable. This can lead to unepected behavior and is not ideal', class(obj), fnames{i});
+                end
+            end
+        end
+        
+        function newCell = copyCell(~, oldCell)
+            newCell = cell(size(oldCell));
+            for i = 1:numel(oldCell)
+                if isa(oldCell{i}, 'cell') % recurse
+                    newCell{i} = copyCell(oldCell{i});
+                elseif isa(oldCell{i},'matlab.mixin.Copyable')
+                    newCell{i} = copy(oldCell{i});
+                elseif isa(oldCell{i}, 'handle')
+                    warning('%s.%s is a handle but not copyable. This can lead to unepected behavior and is not ideal', class(obj), fnames{i});
+                else
+                    newCell{i} = oldCell{i};
                 end
             end
         end
