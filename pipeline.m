@@ -196,7 +196,6 @@ classdef pipeline < baseEstimator & baseTransformer
             newObj.transformers = copyCell(obj.transformers);
             fnames(ismember(fnames,'transformers')) = [];
             
-            fnames = fieldnames(obj);
             for i = 1:length(fnames)
                 if isa(obj.(fnames{i}), 'cell')
                     hasHandles = checkCellsForHandles(obj.(fnames{i}));

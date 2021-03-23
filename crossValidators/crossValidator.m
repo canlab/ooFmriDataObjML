@@ -183,7 +183,6 @@ classdef (Abstract) crossValidator < yFit
             newObj.foldEstimator = copyCell(obj.foldEstimator);
             fnames(ismember(fnames,'foldEstimator')) = [];
             
-            fnames = fieldnames(obj);
             for i = 1:length(fnames)
                 if isa(obj.(fnames{i}), 'cell')
                     hasHandles = checkCellsForHandles(obj.(fnames{i}));
