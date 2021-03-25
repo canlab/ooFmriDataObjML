@@ -48,3 +48,15 @@ the existence of fmri_data specific metadata, which will make image fitting
 difficult. Instead create a transformer class that takes fmri_data objects and
 converts them to simple X block aware structures.
 struct('X', dat.dat, 'block_id', dat.metadata_table.block_id);
+
+### Developer notes
+This library makes extensive use of handles. Most objects here inheret the 
+handle class in fact, and this leads to certain important notes regarding
+handle classes.
+1) handles are passed by reference, not by value. To pass by value, invoke
+obj.copy(), and if updating handle classes make sure that obj.copy() is updated
+to accomodate your updates appropriately
+2) handle object modifications do not automatically propogate out of parallel
+workers. To propogate back out explicitly assign the modified handles to output
+variables. See here for details: 
+https://www.mathworks.com/help/parallel-computing/objects-and-handles-in-parfor-loops.html

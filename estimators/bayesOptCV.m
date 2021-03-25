@@ -143,17 +143,21 @@ classdef bayesOptCV < baseEstimator
         end
     
         function loss = lossFcn(obj, this_hyp, dat, Y)
+            % make a copy. crossValScore ultimately makes a copy too, but
+            % we should control copy functionality here to ensure changes
+            % to crossValScore don't break this function down the line.
+            this_estimator = copy(obj.estimator);
             % set hyperparameters
-            params = obj.estimator.get_params();
+            params = this_estimator.get_params();
             for i = 1:length(this_hyp.Properties.VariableNames)
                 hypname = this_hyp.Properties.VariableNames{i};
                 assert(~isempty(ismember(params, hypname)), ...
                     sprintf('%s is not a valid hyperparameter for bayes optimization', hypname));
                 
-                obj.estimator.set_params(hypname, this_hyp.(hypname));
+                this_estimator.set_params(hypname, this_hyp.(hypname));
             end
             
-            this_cv = crossValScore(obj.estimator, obj.cv, obj.scorer, 'repartOnFit', true, 'n_parallel', 1, 'verbose', false);
+            this_cv = crossValScore(this_estimator, obj.cv, obj.scorer, 'repartOnFit', true, 'n_parallel', 1, 'verbose', false);
             
             % get associated loss
             this_cv.do(dat, Y);
