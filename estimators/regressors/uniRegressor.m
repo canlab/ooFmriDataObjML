@@ -61,8 +61,11 @@ classdef uniRegressor < linearModelEstimator & modelRegressor
                 b(i,:) = xx \ Y;   % should be same, but faster
             end
             
-            obj.B = b(:,2)/size(b,1);
-            obj.offset = mean(b(:,1));
+            % adjust scale for best prediction
+            B = regress(Y,[X*b(:,2), ones(size(X,1),1)]);
+                        
+            obj.B = b(:,2)*B(1);
+            obj.offset = B(2);
             
             obj.isFitted = true;
             obj.fitTime = toc(t0);
