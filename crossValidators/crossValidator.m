@@ -8,7 +8,6 @@ classdef (Abstract) crossValidator < yFit
     end
     
     properties (SetAccess = protected)
-        fold_lbls = [];
         foldEstimator = {};
         
         verbose = true;
@@ -18,6 +17,7 @@ classdef (Abstract) crossValidator < yFit
     end
     
     properties (Dependent = true)
+        fold_lbls;
         classLabels;
     end
     
@@ -171,6 +171,20 @@ classdef (Abstract) crossValidator < yFit
         function set.classLabels(~, ~)
             error('Class labels cannot be set explicitly, they''re determined by unique entries in obj.Y');
         end
+        
+        function val = get.fold_lbls(obj)
+            val = zeros(length(obj.Y),1);
+            for i = 1:obj.cvpart.NumTestSets
+                assert(all(val(obj.cvpart.test(i)) == 0),...
+                    'Fold partitions have nonzero intersecting set: test value assigned to multiple folds. Please query fold membership from obj.cvpart directly.');
+                
+                val(obj.cvpart.test(i)) = i;
+            end
+        end
+        
+        function set.fold_lbls(~,~)
+            error('You cannot set fold_lbls directly. They are set by elements of obj.cvpart');
+        end                    
     end
     
     

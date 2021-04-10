@@ -67,6 +67,9 @@
 %               invoke obj.repartition() or obj.set_cvpart(cvpartition)
 %               with an appropriate cvpartition object.
 %
+% 
+% ToDo:
+%   This needs a major update to support non-kfold partitioning schemes
 
 classdef crossValScore < crossValidator & yFit
     properties (SetAccess = private)
@@ -115,15 +118,7 @@ classdef crossValScore < crossValidator & yFit
                     rethrow(e)
                 end
             end
-            
-            % reformat cvpartition and save as a vector of labels. We will
-            % use this later to sort the results we get back from each CV
-            % fold
-            obj.fold_lbls = zeros(length(Y),1);
-            for i = 1:obj.cvpart.NumTestSets
-                obj.fold_lbls(obj.cvpart.test(i)) = i;
-            end
-            
+                        
             % do coss validation. Dif invocations for parallel vs. serial
             obj.Y = Y;
             [obj.yfit, obj.yfit_raw] = deal([]);
@@ -349,7 +344,6 @@ classdef crossValScore < crossValidator & yFit
             obj.yfit = [];
             obj.yfit_null = [];
             obj.evalTime = -1;
-            obj.fold_lbls = [];
             obj.is_done = false;
 
             obj.evalTimeFits = -1;
@@ -364,7 +358,6 @@ classdef crossValScore < crossValidator & yFit
            obj.yfit = [];
            obj.yfit_null = [];
            obj.evalTime = -1;
-           obj.fold_lbls = [];
            obj.is_done = false;
         
            obj.evalTimeFits = -1;

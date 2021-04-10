@@ -41,6 +41,13 @@
 %   repartition
 %           - resets the cvpartition object.
 %
+%
+% Notes :: 
+%   crossValPredict will only work for k-fold cross validation, or at any
+%   rate, cross validation schemes that have nonintersecting but complete
+%   partition sets. No check is currently done to enforce this though and
+%   strange errors may arrise if you try using a different partitioning
+%   scheme with this function
 
 classdef crossValPredict < crossValidator & yFit   
     properties (Dependent = true)
@@ -64,13 +71,6 @@ classdef crossValPredict < crossValidator & yFit
                         'objects if you need them for passing dependence structures.'], class(obj)), 'identifier', e.identifier, 'stack', e.stack);
                     rethrow(e)
                 end
-            end
-            
-            % reformat cvpartition and save as a vector of labels as a
-            % convenience
-            obj.fold_lbls = zeros(length(Y),1);
-            for i = 1:obj.cvpart.NumTestSets
-                obj.fold_lbls(obj.cvpart.test(i)) = i;
             end
                         
             % do coss validation. Dif invocations for parallel vs. serial
@@ -169,7 +169,6 @@ classdef crossValPredict < crossValidator & yFit
            obj.yfit = [];
            obj.yfit_null = [];
            obj.evalTime = -1;
-           obj.fold_lbls = [];
            obj.is_done = false;
         end
         
@@ -183,7 +182,15 @@ classdef crossValPredict < crossValidator & yFit
         
         function varargout = plot(obj, varargin)
             try
-                figure;
+                if ~isempty(varargin)
+                    mkFigure = true;
+                    for i = 1:length(varargin)
+                        if ischar(varargin{i}) && ismember('Parent', varargin(i))
+                            mkFigure = false;
+                        end
+                    end
+                    if mkFigure, figure; end
+                end
                 if isa(getBaseEstimator(obj.estimator), 'modelClf')
                     values = 1:length(obj.classLabels);
 
@@ -211,8 +218,19 @@ classdef crossValPredict < crossValidator & yFit
 
                 elseif isa(getBaseEstimator(obj.estimator), 'modelRegressor')
                     title('Regressor Performance');
-                    varargout{:} = plot(obj.Y, obj.yfit, '.', varargin{:});
+                    cla(gca); hold on;
+                    b = zeros(obj.cvpart.NumTestSets,2);
+                    for i = 1:obj.cvpart.NumTestSets
+                        this_idx = obj.cvpart.test(i);
+                        varargout{:} = plot(obj.Y(this_idx), obj.yfit(this_idx), '.', varargin{:});
+                        b(i,:) = regress(obj.yfit(this_idx), [obj.Y(this_idx), ones(sum(this_idx),1)]);
+                    end
                     lsline
+                    b = mean(b);
+                    f = @(x1) x1*b(1) + b(2);
+                    yl = [min(obj.Y), max(obj.Y)];
+                    h = plot(yl, f(yl),'-bla');
+                    set(h,'LineWidth',3);
                 else
                     error('Plotting is only supported for modelClf and modelRegressor type base estimators.');
                 end
