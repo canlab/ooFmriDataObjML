@@ -228,8 +228,7 @@ classdef crossValPredict < crossValidator & yFit
                     lsline
                     b = mean(b);
                     f = @(x1) x1*b(1) + b(2);
-                    yl = [min(obj.Y), max(obj.Y)];
-                    h = plot(yl, f(yl),'-bla');
+                    h = plot(xlim, f(xlim),'-bla');
                     set(h,'LineWidth',3);
                 else
                     error('Plotting is only supported for modelClf and modelRegressor type base estimators.');

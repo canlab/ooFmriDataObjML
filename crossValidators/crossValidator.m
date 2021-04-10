@@ -67,7 +67,7 @@ classdef (Abstract) crossValidator < yFit
                 % don't try to copy classLabels because it's a non-setable
                 % property, doesn't need to be set though as long as we
                 % copy Y.
-                if ismember(fnames_score{i}, fnames_predict) && ~strcmp(fnames_score{i}, 'classLabels')
+                if ismember(fnames_score{i}, fnames_predict) && ~ismember(fnames_score{i}, {'classLabels','fold_lbls'})
                     try
                         if isa(cvObj.(fnames_score{i}), 'matlab.mixin.Copyable')
                             obj.(fnames_score{i}) = copy(cvObj.(fnames_score{i}));
