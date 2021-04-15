@@ -1,10 +1,10 @@
 classdef (Abstract) baseEstimator < handle & dynamicprops & matlab.mixin.Copyable
-    properties (SetAccess = ?Estimator)
+    properties (SetAccess = ?baseEstimator)
         isFitted = false;
         fitTime = -1;
     end
     
-    properties (Abstract, Access = ?Estimator)
+    properties (Abstract, Access = ?baseEstimator)
         hyper_params;
     end
     
