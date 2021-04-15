@@ -85,11 +85,6 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         NClasses = 2;
         nClf = 1;
         
-        isFitted = false;
-        fitTime = -1;
-        
-        % CV_funhan = [];
-        
         Mdl = [];
         learnerTemplates = {};
         

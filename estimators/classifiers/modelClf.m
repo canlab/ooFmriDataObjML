@@ -30,6 +30,7 @@ classdef (Abstract) modelClf < baseEstimator
     
     methods
         function yfit = predict(obj, X, varargin)            
+            assert(obj.isFitted, 'Please run obj.fit() before obj.predict()');
             yfit_raw = obj.score_samples(X, varargin{:});
             yfit = obj.decisionFcn(yfit_raw);
         end

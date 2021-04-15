@@ -47,9 +47,6 @@ classdef multilevelGlmRegressor < linearModelEstimator & modelRegressor
         get_batch_id = @(X)(X.metadata.subject_id);
         get_secondlvl_reg = [];
 
-        isFitted = false;
-        fitTime = -1;
-        
         B = [];
         offset = 0;
         offset_null = 0;

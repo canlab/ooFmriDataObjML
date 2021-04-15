@@ -15,9 +15,6 @@ classdef uniRegressor < linearModelEstimator & modelRegressor
     end
     
     properties (SetAccess = protected)                
-        isFitted = false;
-        fitTime = -1;
-        
         B = [];
         offset = 0;
         offset_null = 0;

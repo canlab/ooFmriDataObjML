@@ -58,7 +58,6 @@ classdef bayesOptCV < baseEstimator
     
     properties (SetAccess = private)
         group_id = [];
-        fitTime = -1;
     end
     
     properties (Access = ?baseEstimator)
@@ -115,6 +114,7 @@ classdef bayesOptCV < baseEstimator
             
             obj.estimator.fit(dat, Y, varargin{:});
             obj.fitTime = toc(t0);
+            obj.isFitted = true;
         end
         
         function yfit_raw = score_samples(obj, dat, varargin)
@@ -126,6 +126,7 @@ classdef bayesOptCV < baseEstimator
         end
         
         function yfit = predict(obj, varargin)
+            assert(obj.isFitted,'Please run obj.fit() before obj.predict()');
             yfit = obj.estimator.predict(varargin{:});
         end
         

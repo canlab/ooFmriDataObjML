@@ -9,10 +9,7 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
         fitlmeOpts = {'CovariancePattern','isotropic'};
     end
     
-    properties (SetAccess = protected)                
-        isFitted = false;
-        fitTime = -1;
-        
+    properties (SetAccess = protected)   
         Bb = [];
         Bw = [];
         
@@ -79,7 +76,7 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
             batchIds = obj.batch_id_funhan(X);
             assert(length(batchIds) == length(Y),...
                 'batch_id_funhan did not return valid IDs.');
-                
+                        
             [~, bb, bw, obj.pc_b, ~, obj.pc_w] = mlpcr3(X, Y, 'subjIDs', batchIds, ...
                 'numcomponents', [obj.bt_dim, obj.wi_dim], 'cpca', obj.cpca, ...
                 'randInt', obj.randInt, 'randSlope', obj.randSlope, ...

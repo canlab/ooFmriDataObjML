@@ -47,9 +47,6 @@ classdef svmRegressor < modelRegressor
     end  
     
     properties (SetAccess = protected)                
-        isFitted = false;
-        fitTime = -1;
-        
         Mdl = [];
 
         offset_null = 0;
