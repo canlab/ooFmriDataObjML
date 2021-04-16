@@ -89,7 +89,7 @@ classdef crossValScore < crossValidator & yFit
         % function which when applied to X data object extracts metadata
         % needed by scorer.
         % idx correspond to fold indices
-        % Hidden because the interface is pretty hacky in ineligant.
+        % Hidden because the interface is pretty hacky and ineligant.
         scorer_metadata_constructor = @(X, idx)([]);
     end
     

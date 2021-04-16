@@ -159,6 +159,7 @@ classdef bayesOptCV < baseEstimator
             end
             
             this_cv = crossValScore(this_estimator, obj.cv, obj.scorer, 'repartOnFit', true, 'n_parallel', 1, 'verbose', false);
+            this_cv.scorer_metadata_constructor = @(cvObj,id)(cvObj.cvpart.sid(id));
             
             % get associated loss
             this_cv.do(dat, Y);
