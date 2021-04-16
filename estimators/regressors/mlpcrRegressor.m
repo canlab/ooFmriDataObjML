@@ -121,9 +121,9 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
                     otherwise
                         error('randInt must be true/false');
                 end
-            elseif categorical(true) == val
+            elseif categorical(true) == categorical(val)
                 obj.randSlope = true;
-            elseif categorical(false) == val
+            elseif categorical(false) == categorical(val)
                 obj.randSlope = false;
             else
                 obj.randSlope = val;

@@ -170,6 +170,7 @@ classdef crossValPredict < crossValidator & yFit
            obj.yfit_null = [];
            obj.evalTime = -1;
            obj.is_done = false;
+           obj.repartOnFit = false;
         end
         
         function val = get.cvpart(obj)

@@ -359,6 +359,7 @@ classdef crossValScore < crossValidator & yFit
            obj.yfit_null = [];
            obj.evalTime = -1;
            obj.is_done = false;
+           obj.repartOnFit = false;
         
            obj.evalTimeFits = -1;
            obj.evalTimeScorer = -1;
