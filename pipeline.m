@@ -9,10 +9,6 @@ classdef pipeline < baseEstimator & baseTransformer
         transformer_names = {};
         estimator = {};
         estimator_name = [];
-
-        isFitted = false;
-        
-        fitTime = -1
     end
     
     properties (Access = {?baseTransformer, ?baseEstimator})

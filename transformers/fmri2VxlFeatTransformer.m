@@ -1,4 +1,4 @@
-% obj = fmri2VxlFeatTransformer(Estimator)
+% obj = fmri2VxlFeatTransformer()
 % In most cases fmri2VxlFeatTransformers will serve as the primary vehical for
 % Estimator implementation in this library. Exceptions are noted at the end
 % of this help doc.
@@ -10,6 +10,8 @@
 %                       corresponding brain space.
 %
 %   methods:
+%       obj = fmri2VxlFeatTransformer(['metadataConstructor_funhan',@(X)funhan])
+%
 %       obj = fit(obj, dat, Y, varargin)
 %                   - fit a model to voxel data of fmri_data object dat to
 %                       predict Y using the baseEstimator specified when 
