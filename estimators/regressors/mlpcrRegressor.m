@@ -63,6 +63,8 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
                             obj.fitlmeOpts = varargin{i+1};
                         case 'batch_id_funhan'
                             obj.batch_id_funhan = varargin{i+1};
+                        otherwise
+                            warning('Did not understand %s option', varargin{i});
                     end
                 end
             end

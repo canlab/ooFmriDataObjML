@@ -4,7 +4,7 @@
 % mean(X), while wi is the element-by-element deviation from bias + bt of 
 % each element in X.
 function [bt, wi, bias] = splitVar(X,id)
-    tol = 1e-11;
+    tol = 1e-8;
 
     if isvector(X)
         X = X(:);
