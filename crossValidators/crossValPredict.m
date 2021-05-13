@@ -191,6 +191,8 @@ classdef crossValPredict < crossValidator & yFit
                         end
                     end
                     if mkFigure, figure; end
+                else
+                    figure;
                 end
                 if isa(getBaseEstimator(obj.estimator), 'modelClf')
                     values = 1:length(obj.classLabels);

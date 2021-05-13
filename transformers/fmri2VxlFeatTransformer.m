@@ -1,4 +1,6 @@
 % obj = fmri2VxlFeatTransformer()
+% This help is all outdated. Ignore it. Will need to be updated later.
+%
 % In most cases fmri2VxlFeatTransformers will serve as the primary vehical for
 % Estimator implementation in this library. Exceptions are noted at the end
 % of this help doc.
