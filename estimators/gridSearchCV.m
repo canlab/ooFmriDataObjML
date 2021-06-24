@@ -177,6 +177,7 @@ classdef gridSearchCV < baseEstimator
             
             obj.estimator.fit(dat, Y, varargin{:});
             obj.fitTime = toc(t0);
+            obj.isFitted = true;
         end
         
         

@@ -1,6 +1,7 @@
 classdef getAtlasRegion < baseTransformer    
     properties
         atlasRegion = [];
+        verbose = false;
     end
 
     properties (Access = ?baseTransformer)
@@ -22,6 +23,8 @@ classdef getAtlasRegion < baseTransformer
                     switch varargin{i}
                         case 'atlasRegion'
                             obj.atlasRegion = varargin{i+1};
+                        case 'verbose'
+                            obj.verbose = varargin{i+1};
                     end
                 end
             end
@@ -38,7 +41,7 @@ classdef getAtlasRegion < baseTransformer
         function dat = transform(obj, dat, varargin)
             this_region = fmri_mask_image(obj.atlas.select_atlas_subset(obj.atlasRegion));
                 
-            fprintf('applying atlas region mask\n');
+            if obj.verbose, fprintf('applying atlas region mask\n'); end
             
             dat = apply_mask(dat, this_region);
         end
