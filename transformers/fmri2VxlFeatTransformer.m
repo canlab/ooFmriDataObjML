@@ -105,7 +105,7 @@ classdef fmri2VxlFeatTransformer < baseTransformer
             % get prototype image
             % this needs a solution for when image 1 differs in voxel count
             % from the full dataset
-            obj.brainModel = fmri_data(dat.get_wh_image(1));
+            [~,obj.brainModel] = evalc('fmri_data(dat.get_wh_image(1))');
             fnames = {'images_per_session', 'Y', 'Y_names', 'Y_descrip', 'covariates',...
                 'additional_info', 'metadata_table', 'dat_descrip', 'image_names', 'fullpath'};
             for field = fnames

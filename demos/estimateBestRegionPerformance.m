@@ -66,7 +66,12 @@ inner_cv = @(X,Y) cvpartition2(length(Y), 'GroupKFold', 5, 'Group', X.metadata);
 % of them.
 
 % next two lines are basically the same as if you were invoking the
-% bayesopt native matlab function.
+% bayesopt native matlab function. Notice however that we're only
+% evaluating 15 points. Default is 30, and typically I wouldn't assume 15
+% is enough. We also restrict the dimensionality to 30 dims though under
+% the assumption that PLS will find a solution in the lower dimensions, so
+% it may be sufficient here. Either way, this is only a demo so it hardly
+% matters.
 dims = optimizableVariable('numcomponents',[1,30], 'Type', 'integer', 'Transform', 'log');
 bayesOptOpts = {dims, 'AcquisitionFunctionName', 'expected-improvement-plus', ...
      'MaxObjectiveEvaluations', 15, 'UseParallel' true, 'verbose', 0, 'PlotFcn', {}};
@@ -188,7 +193,7 @@ set(gcf,'Position', [1000,814,1149,467])
 % reference. We want to copy it so that we don't overwrite the old
 % performance metrics.
 cv2 = copy(cv);
-cv2.do(bmrk3pain, bmrk3pain.metadata_table.T);
+cv2.do(test_dat, test_dat.metadata_table.T);
 cv2.do_null()
 cv2.plot();
 
