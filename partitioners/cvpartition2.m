@@ -20,12 +20,12 @@
 % Updated summer 2021
 classdef cvpartition2 < cvpartition
     properties (SetAccess = protected)
-        sid;
+        grp_id;
     end
     methods
-        % C = cvpartition2(group, 'GroupKFold', K, 'Group', sid)
+        % C = cvpartition2(group, 'GroupKFold', K, 'Group', grp_id)
         function cv = cvpartition2(varargin)
-            [sid, delete] = deal([]);
+            [grp_id, delete] = deal([]);
             for i = 1:length(varargin)
                 if ischar(varargin{i})
                     switch varargin{i}
@@ -33,11 +33,15 @@ classdef cvpartition2 < cvpartition
                             k = varargin{i+1};
                             varargin{i} = 'KFold';
                         case 'Group'
-                            assert(length(varargin{i+1}) == length(varargin{1}), ...
-                                'sid must be a vector of sid''s of length(GROUP)');
-                            sid = varargin{i+1};
-                            [~,b] = unique(sid);
-                            varargin{1} = varargin{1}(b);
+                            assert(length(varargin{i+1}) == length(varargin{1}) || varargin{1} == length(varargin{i+1}), ...
+                                'grp_id must be a vector of grp_id''s of length(Group) or a scalar value equal to length(Group)');
+                            grp_id = varargin{i+1};
+                            [~,b] = unique(grp_id);
+                            if length(varargin{1}) > 1
+                                varargin{1} = varargin{1}(b);
+                            else
+                                varargin{1} = ones(length(b),1);
+                            end
                             delete = i:i+1;
                     end
                 end
@@ -45,32 +49,32 @@ classdef cvpartition2 < cvpartition
             varargin(delete) = [];
             
             cv@cvpartition(varargin{:});
-            Impl = cvpartitionInMemoryImpl2(sid,varargin{:});
+            Impl = cvpartitionInMemoryImpl2(grp_id,varargin{:});
             Impl = Impl.updateParams();
             cv.Impl = Impl;
             
-            cv.sid = sid;
+            cv.grp_id = grp_id;
         end % cvpartition constructor
         
-        function obj = set_sid(obj,val)
-            assert(all(ismember(val,obj.sid)) && all(ismember(obj.sid,val)));
-            obj.Impl = obj.Impl.set_sid(val);
-            obj.sid = val;
+        function obj = set_grp_id(obj,val)
+            assert(all(ismember(val,obj.grp_id)) && all(ismember(obj.grp_id,val)));
+            obj.Impl = obj.Impl.set_grp_id(val);
+            obj.grp_id = val;
         end
         
         %{
         function testidx = test(cv,varargin)
             testidx = test(cv.Impl,varargin{:});
-            uniq_sid = unique(cv.sid);
-            test_sid = uniq_sid(testidx);
-            testidx = ismember(cv.sid,test_sid);
+            uniq_grp_id = unique(cv.grp_id);
+            test_grp_id = uniq_grp_id(testidx);
+            testidx = ismember(cv.grp_id,test_grp_id);
         end
         
         function trainidx = training(cv,varargin)
             trainidx = training(cv.Impl,varargin{:});
-            uniq_sid = unique(cv.sid);
-            train_sid = uniq_sid(trainidx);
-            trainidx = ismember(cv.sid,train_sid);
+            uniq_grp_id = unique(cv.grp_id);
+            train_grp_id = uniq_grp_id(trainidx);
+            trainidx = ismember(cv.grp_id,train_grp_id);
         end
         %}
     end    

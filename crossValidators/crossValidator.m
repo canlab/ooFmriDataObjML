@@ -1,4 +1,10 @@
-classdef (Abstract) crossValidator < yFit
+% the primary purpose of this abstract class is to handle conversions
+% between crossValScore and crossValPredict. A handful of common methods
+% are also implemented here. There are probably cleaner ways to handle
+% conversions without using this parent class at all, but for the time
+% being I don't have time to get rid of it.
+
+classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable    
     properties
         repartOnFit = true;
         cv = @(dat, Y)cvpartition(ones(length(dat.Y),1),'KFOLD', 5);
@@ -56,8 +62,18 @@ classdef (Abstract) crossValidator < yFit
         % into the internal logic of any other classes, but may be useful
         % nonetheless on the command line interface or applications of 
         % existing classes in scripts.
+        % 
+        %   [~,I] = sort(obj.fold_lbls);
+        %   [~,II] = sort(I);
+        %   obj.yfit_null = obj.yfit_null(II);
         function obj = crossValPredict(cvObj)
             assert(isa(cvObj, 'crossValScore'), 'Only convesion of crossValScore to crossValPredict is supported at this time.');
+            
+            % cvpartitions only work with non-intersecting cross validation
+            % partitions. This is also required for conversion to
+            % crossValPredict objects, so we use it as a proxy for
+            % non-intersecting sets.
+            assert(isa(cvObj.cvpart, 'cvpartition'), sprintf('crossValidators.cvpart must be type ''cvpartition'' but type ''%s'' found.', class(cvObj.cvpart)));
             
             obj = crossValPredict(copy(cvObj.estimator), cvObj.cv); 
 
@@ -88,7 +104,6 @@ classdef (Abstract) crossValidator < yFit
             % we'll do it for both for consistency
             obj.yfit = [];
             for i = 1:cvObj.cvpart.NumTestSets
-                fold_idx = cvObj.cvpart.test(i);
                 this_baseEstimator = getBaseEstimator(cvObj.foldEstimator{i});
                 if  isa(this_baseEstimator,'modelClf')
                     warning('crossValidator:crossValPredict','You will not be able to convert this object back to crossValScore due to information loss');
@@ -108,20 +123,23 @@ classdef (Abstract) crossValidator < yFit
                         resortIdx = 1;
                     end
                         
-                    obj.yfit = [obj.yfit; this_baseEstimator.decisionFcn(cvObj.yfit_raw(fold_idx, resortIdx))];
+                    obj.yfit = [obj.yfit; this_baseEstimator.decisionFcn(cvObj.yfit_raw{i}(:, resortIdx))];
                 elseif isa(this_baseEstimator, 'modelRegressor')
-                    obj.yfit = [obj.yfit; obj.yfit_raw(fold_idx)];
+                    obj.yfit = [obj.yfit; cvObj.yfit_raw{i}];
                 else
                     error('Conversion of %s to crossValPredict is not supported', ...
                         class(cvObj));
                 end
             end
             
+            obj.Y = cell2mat(cvObj.Y(:));
+            
             % yfit is currently sorted by fold, let's fix that by figuring
             % out what the fold sorting is and reversing it.
             [~,I] = sort(obj.fold_lbls);
             [~,II] = sort(I);
             obj.yfit = obj.yfit(II);
+            obj.Y = obj.Y(II);
         end
         
         
@@ -165,7 +183,13 @@ classdef (Abstract) crossValidator < yFit
         
         %% dependent properties
         function val = get.classLabels(obj)
-            val = unique(obj.Y, 'stable');
+            if iscell(obj.Y) % crossValScore
+                for i = 1:length(obj.Y)
+                    val{i} = unique(obj.Y{i}, 'stable');
+                end
+            else % crossValPredict
+                val = unique(obj.Y, 'stable');
+            end
         end
         
         function set.classLabels(~, ~)
@@ -173,7 +197,11 @@ classdef (Abstract) crossValidator < yFit
         end
         
         function val = get.fold_lbls(obj)
-            val = zeros(length(obj.Y),1);
+            if iscell(obj.Y) % crossValScore
+                val = zeros(sum(cellfun(@length,obj.Y)),1);
+            else % crossValPredict
+                val = zeros(length(obj.Y),1);
+            end
             for i = 1:obj.cvpart.NumTestSets
                 assert(all(val(obj.cvpart.test(i)) == 0),...
                     'Fold partitions have nonzero intersecting set: test value assigned to multiple folds. Please query fold membership from obj.cvpart directly.');
