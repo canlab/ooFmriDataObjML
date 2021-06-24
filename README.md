@@ -10,7 +10,7 @@ work with block dependencies like subjects with multiple observations.
 * https://github.com/canlab/CanlabCore
 * https://github.com/canlab/canlab_single_trials (recommended)
 
-### To Do
+### General Notes
 scikit learn is powerful in part because it allows for very flexible feature
 construction. This is problematic with fmri_data objects because features must 
 exist in some kind of MNI space, but not all features you might want to use
