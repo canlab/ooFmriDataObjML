@@ -171,7 +171,12 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
                         end
                     end
                 end        
-                obj.yfit_raw = cvObj.yfit(:);
+                
+                [obj.yfit_raw, obj.Y, obj.yfit, obj.yfit_null] = deal(cell(1,cvObj.cvpart.NumTestSets));
+                for ii = 1:cvObj.cvpart.NumTestSets
+                    [obj.yfit{ii}, obj.yfit_raw{ii}] = deal(cvObj.yfit(cvObj.fold_lbls == ii));
+                    obj.Y{ii} = cvObj.Y(cvObj.fold_lbls == ii);
+                end
                 obj.eval_score();
             elseif isa(this_baseEstimator, 'modelClf')
                 error('crossValPredict objects with modelClf as their base estimators cannot be converted to crossValScore.');

@@ -58,8 +58,9 @@ classdef crossValPredict < crossValidator & yFit
         cvpart0 = [];
     end
     
-    methods        
+    methods           
         function obj = do(obj, dat, Y)
+            
             t0 = tic;
             if obj.repartOnFit || isempty(obj.cvpart)
                 try
@@ -73,6 +74,9 @@ classdef crossValPredict < crossValidator & yFit
                 end
             end
                         
+            assert(isa(obj.cvpart, 'cvpartition'),...
+                'cvpartitioner must be of type ''cvpartition'' to ensure non-overlapping partitions. Use crossValScore for performance estimation with overlapping partitions.');
+            
             % do coss validation. Dif invocations for parallel vs. serial
             obj.Y = Y;
             obj.yfit = eval(sprintf('%s.empty(%d,0)',class(Y),length(Y))); % create empty array of same class as Y
