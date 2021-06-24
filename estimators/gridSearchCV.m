@@ -27,10 +27,13 @@
 %               scalar value loss estimate. Default is get_mse(). yFit
 %               objects have yfit, yfit_null and Y properties
 %
-%   score_aggregator
-%           - a function that converts fold-specific scores into a single
-%               score value. Defaults to @mean. Other measures of central
-%               tendency may be preferable depending on the estimator.
+% Optional ::
+%
+%   verbose - true/false. Default: false
+%
+%   n_parallel 
+%           - number of parallel workers to use. Default: 1
+%
 %
 %   gridSearchCV methods:
 %       fit     - run gridSearchCV to identify best hyperparameters
