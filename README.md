@@ -1,4 +1,4 @@
-# ooFmriDatML
+# ooFmriDatObjML
 Object oriented ML framework for fmri_data objects
 
 Inpsired by the design of scikit-learn. Designed to balance interoperability
