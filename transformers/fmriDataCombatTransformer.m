@@ -48,7 +48,7 @@ classdef fmriDataCombatTransformer < baseTransformer
                     min_n = 2;
                 end
             end
-            [uniq_batch,b] = unique(batch_id);
+            [uniq_batch,b] = unique(batch_id, 'stable');
             b(end+1) = length(batch_id)+1;
             n_batches = diff(b);
             bad_idx = find(n_batches < min_n);
