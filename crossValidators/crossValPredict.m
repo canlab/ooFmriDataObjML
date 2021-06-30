@@ -187,8 +187,14 @@ classdef crossValPredict < crossValidator & yFit
                 if isa(getBaseEstimator(obj.estimator), 'modelClf')
                     values = 1:length(obj.classLabels);
 
-                    cfmat = confusionmat(obj.Y, obj.yfit);
-
+                    if ~isa(obj.Y, class(obj.yfit))
+                        warning('Y is type %s but yfit is type %s. Will attempt autoconvesions.', class(obj.Y), class(obj.yfit));
+                        Y = cast(obj.Y, 'like', obj.yfit);
+                    else
+                        Y = obj.Y
+                    end
+                    cfmat = confusionmat(Y, obj.yfit);
+                    
                     uniq_val = cellstr(categorical(obj.classLabels));
                     uniq_val = strrep(uniq_val,'_','');
                     

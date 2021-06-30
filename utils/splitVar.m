@@ -12,6 +12,12 @@ function [bt, wi, bias] = splitVar(X,id)
         assert(ismatrix(X)); 
     end
     
+    nans = isnan(X);
+    if any(nans)
+        X(nans) = nanmean(X);
+        warning('%d nan''s found, replacing with mean', sum(nans));
+    end
+    
     assert(length(id) == size(X,1),'dat must be length(id) x m');
     
     X = double(X);

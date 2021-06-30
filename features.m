@@ -107,7 +107,11 @@ classdef features < double
                     end
                     
                     if size(obj.metadata,1) == size(obj,1)
-                        newmd = subsasgn(obj.metadata, s, b.metadata);
+                        if ~isempty(b)
+                            newmd = subsasgn(obj.metadata, s, b.metadata);
+                        else
+                            newmd = subsasgn(obj.metadata, s, b);
+                        end
                     else
                         newmd = obj.metadata;
                     end
