@@ -122,8 +122,6 @@ classdef lassoPcrRegressor < linearModelEstimator & modelRegressor
     end
     
     properties (SetAccess = protected)                
-        isFitted = false;
-        fitTime = -1;  
         lassoParams = {};
 
         B = [];

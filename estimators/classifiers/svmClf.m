@@ -61,9 +61,6 @@ classdef svmClf < modelClf
     end
     
     properties (SetAccess = protected)                
-        isFitted = false;
-        fitTime = -1;
-        
         Mdl = [];
     end
     

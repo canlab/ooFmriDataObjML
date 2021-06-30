@@ -9,10 +9,6 @@ classdef pipeline < baseEstimator & baseTransformer
         transformer_names = {};
         estimator = {};
         estimator_name = [];
-
-        isFitted = false;
-        
-        fitTime = -1
     end
     
     properties (Access = {?baseTransformer, ?baseEstimator})
@@ -165,21 +161,21 @@ classdef pipeline < baseEstimator & baseTransformer
         end
         
         function obj = set_transformer(obj,transformers)
-            obj.transformer = {};
+            obj.transformers = {};
             obj.transformer_names = {};
             
             for i = 1:length(transformers)
-                assert(isa(transformers{i}{2}, 'Transformer'), 'All steps must be transformers');
+                assert(isa(transformers{i}{2}, 'baseTransformer'), 'All steps must be transformers');
                 
                 obj.transformer_names{end+1} = transformers{i}{1};
                 obj.transformers{end+1} = copy(transformers{i}{2});
             end
             
-            obj.isFitted = false;
+            %obj.isFitted = false;
         end
         
         function obj = set_estimator(obj,estimator)       
-            assert(isa(estimator{2}, 'Estimator'), 'estimator must be type Estimator');
+            assert(isa(estimator{2}, 'baseEstimator'), 'estimator must be type Estimator');
 
             obj.estimator_name = estmator{1};
             obj.estimator = copy(estimator{2});
@@ -189,14 +185,26 @@ classdef pipeline < baseEstimator & baseTransformer
     end
     
     methods (Access = protected)
-        function obj = copyElement(obj)
-            obj = copyElement@matlab.mixin.Copyable(obj);
+        function newObj = copyElement(obj)
+            newObj = copyElement@matlab.mixin.Copyable(obj);
             
             fnames = fieldnames(obj);
+            newObj.transformers = copyCell(obj.transformers);
+            fnames(ismember(fnames,'transformers')) = [];
+            
             for i = 1:length(fnames)
-                
-                if isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
-                    obj.(fnames{i}) = copy(obj.(fnames{i}));
+                if isa(obj.(fnames{i}), 'cell')
+                    hasHandles = checkCellsForHandles(obj.(fnames{i}));
+                    if hasHandles
+                        try
+                            newObj.(fnames{i}) = cell(size(obj.(fnames{i})));
+                            warning('%s.%s has handle objects, but corresponding deep copy support hasn''t been implemented. Dropping %s.',class(obj), fnames{i}, fnames{i});
+                        catch
+                            error('%s.%s has handle objects, corresponding copy support hasn''t been implemented, and element cannot be dropped. Cannot complete deep copy.',class(obj), fnames{i});
+                        end
+                    end
+                elseif isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
+                    newObj.(fnames{i}) = copy(obj.(fnames{i}));
                 elseif isa(obj.(fnames{i}), 'handle') % implicitly: & ~isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
                     % the issue here is that fuction handles that are
                     % copied can contain references to the object they

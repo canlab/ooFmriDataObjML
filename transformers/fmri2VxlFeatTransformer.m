@@ -1,4 +1,6 @@
-% obj = fmri2VxlFeatTransformer(Estimator)
+% obj = fmri2VxlFeatTransformer()
+% This help is all outdated. Ignore it. Will need to be updated later.
+%
 % In most cases fmri2VxlFeatTransformers will serve as the primary vehical for
 % Estimator implementation in this library. Exceptions are noted at the end
 % of this help doc.
@@ -10,6 +12,8 @@
 %                       corresponding brain space.
 %
 %   methods:
+%       obj = fmri2VxlFeatTransformer(['metadataConstructor_funhan',@(X)funhan])
+%
 %       obj = fit(obj, dat, Y, varargin)
 %                   - fit a model to voxel data of fmri_data object dat to
 %                       predict Y using the baseEstimator specified when 
@@ -101,7 +105,7 @@ classdef fmri2VxlFeatTransformer < baseTransformer
             % get prototype image
             % this needs a solution for when image 1 differs in voxel count
             % from the full dataset
-            obj.brainModel = fmri_data(dat.get_wh_image(1));
+            [~,obj.brainModel] = evalc('fmri_data(dat.get_wh_image(1))');
             fnames = {'images_per_session', 'Y', 'Y_names', 'Y_descrip', 'covariates',...
                 'additional_info', 'metadata_table', 'dat_descrip', 'image_names', 'fullpath'};
             for field = fnames
@@ -160,11 +164,11 @@ classdef fmri2VxlFeatTransformer < baseTransformer
             if isdiff == 1 || isdiff == 2 % diff space, not just diff voxels
                 % == 3 is ok, diff non-empty voxels
 
-                mask = resample_space(mask, dat);
+                dat = resample_space(dat, mask);
 
-                if length(mask.removed_voxels) == mask.volInfo.nvox
+                if length(dat.removed_voxels) == dat.volInfo.nvox
                     warning('resample_space returned illegal length for removed voxels. Fixing...');
-                    mask.removed_voxels = mask.removed_voxels(mask.volInfo.wh_inmask);
+                    dat.removed_voxels = dat.removed_voxels(dat.volInfo.wh_inmask);
                 end
             end
 

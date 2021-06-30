@@ -9,10 +9,7 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
         fitlmeOpts = {'CovariancePattern','isotropic'};
     end
     
-    properties (SetAccess = protected)                
-        isFitted = false;
-        fitTime = -1;
-        
+    properties (SetAccess = protected)   
         Bb = [];
         Bw = [];
         
@@ -66,6 +63,8 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
                             obj.fitlmeOpts = varargin{i+1};
                         case 'batch_id_funhan'
                             obj.batch_id_funhan = varargin{i+1};
+                        otherwise
+                            warning('Did not understand %s option', varargin{i});
                     end
                 end
             end
@@ -79,7 +78,7 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
             batchIds = obj.batch_id_funhan(X);
             assert(length(batchIds) == length(Y),...
                 'batch_id_funhan did not return valid IDs.');
-                
+                        
             [~, bb, bw, obj.pc_b, ~, obj.pc_w] = mlpcr3(X, Y, 'subjIDs', batchIds, ...
                 'numcomponents', [obj.bt_dim, obj.wi_dim], 'cpca', obj.cpca, ...
                 'randInt', obj.randInt, 'randSlope', obj.randSlope, ...
@@ -124,9 +123,9 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
                     otherwise
                         error('randInt must be true/false');
                 end
-            elseif categorical(true) == val
+            elseif categorical(true) == categorical(val)
                 obj.randSlope = true;
-            elseif categorical(false) == val
+            elseif categorical(false) == categorical(val)
                 obj.randSlope = false;
             else
                 obj.randSlope = val;

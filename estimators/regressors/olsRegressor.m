@@ -11,10 +11,7 @@ classdef olsRegressor < linearModelEstimator & modelRegressor
         numcomponents = 1;
     end
     
-    properties (SetAccess = protected)                
-        isFitted = false;
-        fitTime = -1;
-        
+    properties (SetAccess = protected)       
         B = [];
         offset = 0;
         offset_null = 0;

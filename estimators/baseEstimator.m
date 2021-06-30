@@ -1,5 +1,10 @@
 classdef (Abstract) baseEstimator < handle & dynamicprops & matlab.mixin.Copyable
-    properties (Abstract, Access = ?Estimator)
+    properties (SetAccess = ?baseEstimator)
+        isFitted = false;
+        fitTime = -1;
+    end
+    
+    properties (Abstract, Access = ?baseEstimator)
         hyper_params;
     end
     
@@ -58,13 +63,23 @@ classdef (Abstract) baseEstimator < handle & dynamicprops & matlab.mixin.Copyabl
     end
     
     methods (Access = protected)
-        function obj = copyElement(obj)
-            obj = copyElement@matlab.mixin.Copyable(obj);
+        function newObj = copyElement(obj)
+            newObj = copyElement@matlab.mixin.Copyable(obj);
             
             fnames = fieldnames(obj);
             for i = 1:length(fnames)
-                if isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
-                    obj.(fnames{i}) = copy(obj.(fnames{i}));
+                if isa(obj.(fnames{i}), 'cell')
+                    hasHandles = checkCellsForHandles(obj.(fnames{i}));
+                    if hasHandles
+                        try
+                            newObj.(fnames{i}) = cell(size(obj.(fnames{i})));
+                            warning('%s.(%s) has handle objects, but corresponding deep copy support hasn''t been implemented. Dropping %s.',class(obj), fnames{i}, fnames{i});
+                        catch
+                            error('%s.(%s) has handle objects, corresponding copy support hasn''t been implemented, and element cannot be dropped. Cannot complete deep copy.',class(obj), fnames{i});
+                        end
+                    end
+                elseif isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
+                    newObj.(fnames{i}) = copy(obj.(fnames{i}));
                 elseif isa(obj.(fnames{i}), 'handle') % implicitly: & ~isa(obj.(fnames{i}), 'matlab.mixin.Copyable')
                     % the issue here is that fuction handles that are
                     % copied can contain references to the object they

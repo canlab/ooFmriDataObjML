@@ -67,7 +67,7 @@ classdef features < double
                         md_s.subs = md_s.subs(1:2);
                         
                         if size(sref.metadata,2) == size(sref,2)
-                            warning('sref.metadata appears to have as many columns as you have features. This is unexpected and may result in unexpected feature metadata. Please check results of features subscripting.');
+                            warning('features:dim','sref.metadata appears to have as many columns as you have features. This is unexpected and may result in unexpected feature metadata. Please check results of features subscripting.');
                         end
                         
                         newmd = subsref(sref.metadata, md_s);

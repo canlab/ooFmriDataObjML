@@ -15,9 +15,6 @@ classdef uniRegressor < linearModelEstimator & modelRegressor
     end
     
     properties (SetAccess = protected)                
-        isFitted = false;
-        fitTime = -1;
-        
         B = [];
         offset = 0;
         offset_null = 0;
@@ -61,8 +58,11 @@ classdef uniRegressor < linearModelEstimator & modelRegressor
                 b(i,:) = xx \ Y;   % should be same, but faster
             end
             
-            obj.B = b(:,2)/size(b,1);
-            obj.offset = mean(b(:,1));
+            % adjust scale for best prediction
+            B = regress(Y,[X*b(:,2), ones(size(X,1),1)]);
+                        
+            obj.B = b(:,2)*B(1);
+            obj.offset = B(2);
             
             obj.isFitted = true;
             obj.fitTime = toc(t0);

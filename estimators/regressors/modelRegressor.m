@@ -8,6 +8,7 @@
 classdef (Abstract) modelRegressor < baseEstimator        
     methods
         function yfit = predict(obj, X, varargin)
+            assert(obj.isFitted,'Please run obj.fit() before obj.predict()');
             yfit = obj.score_samples(X, varargin{:});
         end
         

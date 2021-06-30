@@ -4,7 +4,7 @@
 % mean(X), while wi is the element-by-element deviation from bias + bt of 
 % each element in X.
 function [bt, wi, bias] = splitVar(X,id)
-    tol = 1e-11;
+    tol = 1e-8;
 
     if isvector(X)
         X = X(:);
@@ -22,23 +22,11 @@ function [bt, wi, bias] = splitVar(X,id)
     
     X = double(X);
     
-    [~,~,id] = unique(id,'stable');
-    uniq_id = unique(id,'stable');
-    n_id = length(uniq_id);
+    blk = dummyvar(categorical(id));
+    meanmat = blk/(blk'*blk)*blk';
     
-    cmat = [];
-    mumat = [];
-    n = [];
-    for i = 1:n_id
-        this_blk = uniq_id(i);
-        this_n = sum(this_blk == id);
-        %n = [n(:); this_n*ones(this_n,1)];
-        cmat = blkdiag(cmat, eye(this_n) - 1/this_n);
-        mumat = blkdiag(mumat, ones(this_n)*1/this_n);
-    end
-    
-    wi = cmat*X;
-    bt = mumat*X;
+    wi = X - meanmat*X;
+    bt = meanmat*X;
     bt = bt - mean(X,1);
     bias = mean(X,1)*ones(length(X),1);
     

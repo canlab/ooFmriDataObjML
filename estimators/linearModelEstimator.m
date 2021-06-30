@@ -24,6 +24,8 @@ classdef (Abstract) linearModelEstimator < baseEstimator
     
     methods
         function yfit_raw = score_samples(obj, X, varargin)
+            assert(obj.isFitted, 'Please run obj.fit() before obj.score_samples()');
+            
             if isempty(obj.B)
                 yfit_raw = repmat(obj.offset, size(X,1), 1);
             else

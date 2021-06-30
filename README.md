@@ -1,50 +1,54 @@
-# ooFmriDatML
+# ooFmriDatObjML
 Object oriented ML framework for fmri_data objects
 
 Inpsired by the design of scikit-learn. Designed to balance interoperability
-with the sckit-learn syntax (for ease of use and adoption), but operates 
-exclusively on canlabCore fmri_data objects. More geared towards preprocessing
-than feature construction.
+with the sckit-learn syntax (for ease of use and adoption), but designed to
+work with block dependencies like subjects with multiple observations. 
 
 ### Dependencies
 * https://github.com/canlab/ComBatHarmonization
 * https://github.com/canlab/CanlabCore
 * https://github.com/canlab/canlab_single_trials (recommended)
 
-### To Do
+### General Notes
 scikit learn is powerful in part because it allows for very flexible feature
-construction. This library isn't very good at this because of the way it
-incorporates fmri_data objects into its input. A features must exist in some
-kind of MNI space as a result, but not all features you might want to use
-do exist in this space. Consider if all you're interested in is coarse signals,
-like net activity in a subset of regions of interest. There's no good way to
-represent these features as an fmri_data object, it's much more sensible 
-taken out of brain space. However, you must have some kind of MNI space 
+construction. This is problematic with fmri_data objects because features must 
+exist in some kind of MNI space, but not all features you might want to use
+do exist in this space in a natural way. Consider if all you're interested in 
+are coarse signals, like net activity in a subset of regions of interest. There's 
+no good way to represent these features as an fmri_data object, it's much more 
+sensible taken out of brain space. However, you must have some kind of MNI space 
 awareness for testing new input which may not be in the same space.
 
-There are several options for working around this. One is to define a 
+There are several options for working around this. The one used here is to define a 
 transformer that converts from fmri_data objects to features, and which when
 'fit', saves the reference images space as a property, so that when substequent
 transformations are applied, data can be projected into this space and then
 have its \*.dat field returned. The limitation is that we need a way to 
 package metadata downstream, specifically block id metadata for things like
 group k-fold CV and block aware modeling algorithms (e.g. concensus PCA, mixed
-effects models, etc). Another fix to this might be for all fit, do and transform
-functions to take a third (optionally null) argument that provides metadata.
-The metadata would only need to implement subscripting and concatenation 
-operators, which tables implement, but which can also be implemented for
+effects models, etc). The way we solve that is to give features objects a metadata
+property. The features object is in fact what's know as an extended double, in other
+words just a vector of doubles but extended in the sense that it has properties. 
+Metadata must implement subscripting and concatenation operators, so for instance
+other vectors or tables implement are suitable, but they can also be implemented for
 abitrary customized classes as indicated here:
 https://www.mathworks.com/help/matlab/matlab_oop/implementing-operators-for-your-class.html
-which allows for flexible metadata use.
+which allows for pretty flexible metadata use.
 
-Here's a new better idea,
-Overload indexing of fmri_data objects (cat is already implemented). Add a 'size' and
-'length' method to the class in canlabCore (should be an improvement without any
-negative side effects). Convert fmriDataPredictors to invoke a get_X() anonymous 
-function on input data to extract features. This can default to @(x1)(x1.dat') by
-default, but can be modified by class invocation to look elsewhere. You can't use
-fmri_data anywhere in the input to the predictors for this to work, it can't assume
-the existence of fmri_data specific metadata, which will make image fitting
-difficult. Instead create a transformer class that takes fmri_data objects and
-converts them to simple X block aware structures.
-struct('X', dat.dat, 'block_id', dat.metadata_table.block_id);
+The neat thing about this approach is that it means all the base ML algorithms of 
+this library can actually be used on non-fmri_data objects too, you just load them up
+in a features object if they need metadata for block awareness, or supply them 
+directly to the algorithms as vectors/matrices.
+
+### Developer notes
+This library makes extensive use of handles. Most objects here inheret the 
+handle class in fact, and this leads to certain important notes regarding
+handle classes.
+1) handles are passed by reference, not by value. To pass by value, invoke
+obj.copy(), and if updating handle classes make sure that obj.copy() is updated
+to accomodate your updates appropriately
+2) handle object modifications do not automatically propogate out of parallel
+workers. To propogate back out explicitly assign the modified handles to output
+variables. See here for details: 
+https://www.mathworks.com/help/parallel-computing/objects-and-handles-in-parfor-loops.html

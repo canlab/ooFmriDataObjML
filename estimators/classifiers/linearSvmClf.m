@@ -81,10 +81,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
         scoreFcn0 = @(x1)(x1);
     end
     
-    properties (SetAccess = protected)                
-        isFitted = false;
-        fitTime = -1;
-        
+    properties (SetAccess = protected)                 
         % CV_funhan = [];
         
         Mdl = [];
