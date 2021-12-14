@@ -23,12 +23,13 @@ function [bt, wi, bias] = splitVar(X,id)
     X = double(X);
     
     blk = dummyvar(categorical(id));
-    meanmat = blk/(blk'*blk)*blk';
     
-    wi = X - meanmat*X;
-    bt = meanmat*X;
-    bt = bt - mean(X,1);
-    bias = mean(X,1)*ones(length(X),1);
+    %fprintf('Multiplying large matrices...\n')
+    bt = blk/(blk'*blk)*blk'*X; % bt + bias
+    wi = X - bt;
+    bt = bt - mean(X,1); % remove bias term
+    bias = repmat(mean(X,1),size(X,1),1);
     
-    assert(all(wi + bt + bias - X < tol),'Variance splitting failed, X != bt + wi + bias.')
+    SSident = wi + bt + bias - X;
+    assert(all(SSident(:) < tol),'Variance splitting failed, X != bt + wi + bias.')
 end
