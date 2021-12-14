@@ -1,4 +1,5 @@
 classdef mlpcrRegressor < linearModelEstimator & modelRegressor
+    % multilevel PCR. Depends on mlpcr3.m, provided by canlabPrivate repo
     properties
         bt_dim = Inf;
         wi_dim = Inf;
