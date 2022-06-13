@@ -27,9 +27,9 @@ classdef functionTransformer < baseTransformer
         function X = transform(obj, X)
             assert(obj.isFitted,'Please call functionTransformer.fit() before functionTransformer.transform().');
             
-	    if isa(X,'features')
-	        X = features(obj.funhan(X), X)
-	    else
+            if isa(X,'features')
+                X = features(obj.funhan(X), X);
+            else
                 X = obj.funhan(X);
             end
         end

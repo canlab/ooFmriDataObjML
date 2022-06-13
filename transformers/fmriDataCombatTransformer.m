@@ -121,7 +121,7 @@ classdef fmriDataCombatTransformer < baseTransformer
             dat = dat.remove_empty();
             
             % retrieve the spatially updated params
-            grand_mean = dat.dat(:,n+1)';
+            grand_mean = dat.dat(:,n+1)'; 
             var_pooled = dat.dat(:,n+2);
             if size(dat.dat,2) > n + 2
                 B_hat = dat.dat(:,n+3:end)';

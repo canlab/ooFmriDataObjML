@@ -47,7 +47,7 @@ classdef pcrRegressor < linearModelEstimator & modelRegressor
             end
         end
         
-        function fit(obj, X, Y)
+        function fit(obj, X, Y)            
             t0 = tic;
             assert(size(X,1) == length(Y), 'length(Y) ~= size(X, 1)');
             obj.offset_null = mean(Y);
@@ -74,7 +74,7 @@ classdef pcrRegressor < linearModelEstimator & modelRegressor
                 numc = obj.numcomponents;
 
                 if obj.numcomponents > size(pc, 2)
-                    warning('PCR:numcomponents','Number of components requested (%d) is more than unique components in training data (%d).', obj.numcomponents, size(pc,2));
+                    %warning('PCR:numcomponents','Number of components requested (%d) is more than unique components in training data (%d).', obj.numcomponents, size(pc,2));
                     numc = size(pc, 2);
                 end
                 pc = pc(:, 1:numc);
@@ -134,7 +134,7 @@ classdef pcrRegressor < linearModelEstimator & modelRegressor
 
             obj.B = pc(:, 1:numcomps) * b(2:end);
             obj.offset = b(1);
-            
+                        
             obj.isFitted = true;
             obj.fitTime = toc(t0);
         end
