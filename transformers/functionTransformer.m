@@ -28,7 +28,7 @@ classdef functionTransformer < baseTransformer
             assert(obj.isFitted,'Please call functionTransformer.fit() before functionTransformer.transform().');
             
             if isa(X,'features')
-                X = features(obj.funhan(X), X);
+                X = features(obj.funhan(X), X.metadata);
             else
                 X = obj.funhan(X);
             end
