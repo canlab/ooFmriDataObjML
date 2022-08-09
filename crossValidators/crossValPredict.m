@@ -205,7 +205,7 @@ classdef crossValPredict < crossValidator & yFit
                         warning('Y is type %s but yfit is type %s. Will attempt autoconvesions.', class(obj.Y), class(obj.yfit));
                         Y = cast(obj.Y, 'like', obj.yfit);
                     else
-                        Y = obj.Y
+                        Y = obj.Y;
                     end
                     cfmat = confusionmat(Y, obj.yfit);
                     
