@@ -189,9 +189,7 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
         %% dependent properties
         function val = get.classLabels(obj)
             if iscell(obj.Y) % crossValScore
-                for i = 1:length(obj.Y)
-                    val{i} = unique(obj.Y{i}, 'stable');
-                end
+                val = unique(cell2mat(obj.Y(:)), 'stable');
             else % crossValPredict
                 val = unique(obj.Y, 'stable');
             end
