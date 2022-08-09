@@ -13,6 +13,9 @@ function err = get_hinge_loss(yFitObj)
         assert(1 == size(yfit_raw,2), ...
             sprintf('Expected on score per obseation, but recieved %d scores for each', size(yfit_raw,2)));
         
+        % this is suspect here. What if uniq_classes(1) is 1 and
+        % uniq_classes(2) is -1, and this flips the order that was used to
+        % generate yfit_raw?
         Y(categorical(yFitObj.Y) == uniq_classes(1)) = -1;
         Y(categorical(yFitObj.Y) == uniq_classes(2)) = 1;
         
@@ -43,5 +46,15 @@ function err = get_hinge_loss(yFitObj)
     end
     err = max(0, 1 - margin(:));
     
-    err = sum(err)./length(yFitObj.classLabels);
+    err = sum(err);
+    
+    % I don't actually know if this conditional is needed. I'm putting this
+    % code here to warn anybody who needs real hinge values that the binary
+    % hinge values may not be correct (too large by a factor of 2). For the
+    % time being I'm postponing the issue because when used asa
+    % minimization function it doesn't matter if we're systematically off
+    % by a scaling factor.
+    %if length(uniq_classes) > 2
+        err = err./length(yFitObj.classLabels);
+    %end
 end

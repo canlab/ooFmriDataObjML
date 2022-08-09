@@ -13,7 +13,7 @@ function err = get_f1_macro(yFitObj)
     Y = categorical(yFitObj.Y);
     yfit = categorical(yFitObj.yfit);
     
-    labels = unique(Y);
+    labels = categorical(yFitObj.classLabels);
     
     f1 = 0;
     for i = 1:length(labels)
