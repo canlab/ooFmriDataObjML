@@ -8,6 +8,8 @@ function err = get_hinge_loss(yFitObj)
     yfit_raw = yFitObj.yfit_raw;
     
     if length(uniq_classes) == 2 % binary hinge
+        assert(all(ismember(yFitObj.Y,[-1,1])),'Binary hinge loss requires -1,1 class labels');
+        %{
         Y = zeros(size(yFitObj.Y));
         
         assert(1 == size(yfit_raw,2), ...
@@ -20,6 +22,8 @@ function err = get_hinge_loss(yFitObj)
         Y(categorical(yFitObj.Y) == uniq_classes(2)) = 1;
         
         margin = Y.*yfit_raw;
+        %}
+        margin = yFitObj.Y.*yfit_raw;
     else
         assert(size(uniq_classes,2) == size(yfit_raw,2), ...
             sprintf('Expected on score per class, but recieved %d scores for %d classes', size(yfit_raw,2),size(uniq_classes,2)));
