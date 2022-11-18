@@ -13,20 +13,20 @@ close all; clear all;
 
 %% import libraries and their dependencies
 
-addpath('/projects/bope9760/spm12'); % canlabCore dep
+addpath('/dartfs-hpc/rc/home/m/f0042vm/software/spm12'); % canlabCore dep
 
-addpath(genpath('/projects/bope9760/software/canlab/CanlabCore')); % canlab_single_trails* and ooFmriDataObjML dep
-addpath(genpath('/projects/bope9760/software/canlab/Neuroimaging_Pattern_Masks')); % canlab_single_trails* and ooFmriDataObjML dep
-addpath(genpath('/projects/bope9760/software/canlab/MasksPrivate')); % canlab_single_trails* and ooFmriDataObjML dep
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/CanlabCore')); % canlab_single_trails* and ooFmriDataObjML dep
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/Neuroimaging_Pattern_Masks')); % canlab_single_trails* and ooFmriDataObjML dep
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/MasksPrivate')); % canlab_single_trails* and ooFmriDataObjML dep
 
-addpath(genpath('/projects/bope9760/software/canlab/CanlabPrivate')); % canlab_single_trails* and ooFmriDataObjML dep
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/CanlabPrivate')); % canlab_single_trails* and ooFmriDataObjML dep
 
-addpath(genpath('/work/ics/data/projects/wagerlab/labdata/projects/canlab_single_trials_for_git_repo/')); % canlab_single_trials dep
-addpath(genpath('/projects/bope9760/software/canlab/canlab_single_trials')); % data repo
-addpath(genpath('/projects/bope9760/software/canlab/canlab_single_trials_private')); % data repo
+addpath(genpath('/dartfs/rc/lab/C/CANlab/labdata/projects/canlab_single_trials_for_git_repo')); % canlab_single_trials dep
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/canlab_single_trials')); % data repo
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/canlab_single_trials_private')); % data repo
 
-addpath('/projects/bope9760/software/combat/ComBatHarmonization/Matlab/scripts'); % ooFmriDataObjML dep
-addpath(genpath('/projects/bope9760/software/canlab/ooFmriDataObjML')); % an MVPA modeling framework
+addpath('/dartfs-hpc/rc/home/m/f0042vm/software/combat/ComBatHarmonization/Matlab/scripts'); % ooFmriDataObjML dep
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/ooFmriDataObjML')); % an MVPA modeling framework
 
 if ~isempty(gcp('nocreate'))
     delete(gcp('nocreate'));
