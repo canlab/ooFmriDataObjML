@@ -26,6 +26,12 @@
 %               any optimizableVariable object must have 'Name' set to a
 %               value matching those returned by estimator.get_params().
 %
+%   Optional ::
+%
+%       'scorer_metdata_constructor' - followed by a function handle that
+%               takes two arguments, a cvpartition object and an index
+%               list.
+%
 %   bayesOptCV methods:
 %       fit     - run bayesopt to identify best hyperparameters
 %       predict - get prediction using optimally fit hyperparameters
@@ -54,6 +60,8 @@ classdef bayesOptCV < baseEstimator
         estimator = [];
         cv = @(X,Y)cvpartition(ones(length(Y),1),'KFOLD', 5)
         scorer = [];
+        %scorer_metadata_constructor = @(cvObj,id)(cvObj.cvpart.grp_id(id));
+        scorer_metadata_constructor = @(cvObj,id)([]);
     end
     
     properties (SetAccess = private)
@@ -65,7 +73,16 @@ classdef bayesOptCV < baseEstimator
     end
     
     methods
-        function obj = bayesOptCV(estimator, cv, scorer, bayesOptOpts)
+        function obj = bayesOptCV(estimator, cv, scorer, bayesOptOpts, varargin)
+            for i = 1:nargin-4
+                if ischar(varargin{i})
+                    switch varargin{i}
+                        case 'scorer_metdata_constructor'
+                            obj.scorer_metadata_constructor = varargin{i+1};
+                    end
+                end
+            end
+            
             obj.estimator = copy(estimator);
             if ~isempty(cv), obj.cv = cv; end
 
@@ -159,7 +176,7 @@ classdef bayesOptCV < baseEstimator
             end
             
             this_cv = crossValScore(this_estimator, obj.cv, obj.scorer, 'repartOnFit', true, 'n_parallel', 1, 'verbose', false);
-            this_cv.scorer_metadata_constructor = @(cvObj,id)(cvObj.cvpart.grp_id(id));
+            this_cv.scorer_metadata_constructor = obj.scorer_metadata_constructor;
             
             % get associated loss
             this_cv.do(dat, Y);
