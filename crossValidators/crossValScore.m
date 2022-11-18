@@ -132,9 +132,9 @@ classdef crossValScore < crossValidator % note this is not a yFit object, only c
                 for i = 1:obj.cvpart.NumTestSets
                     if obj.verbose, fprintf('Evaluating fold %d/%d\n', i, obj.cvpart.NumTestSets); end
 
-                    obj.Y{i} = Y(obj.cvpart.test(i));
+                    obj.Y{i} = Y(obj.cvpart.test(i),:);
                     
-                    train_Y = Y(~obj.cvpart.test(i));
+                    train_Y = Y(~obj.cvpart.test(i),:);
                     if isa(X,'image_vector')
                         train_dat = X.get_wh_image(~obj.cvpart.test(i));
                         test_dat = X.get_wh_image(obj.cvpart.test(i));
@@ -184,11 +184,11 @@ classdef crossValScore < crossValidator % note this is not a yFit object, only c
                 % assigned or obj.classLabels breaks within the parfor
                 % loop.
                 for i = 1:obj.cvpart.NumTestSets
-                    obj.Y{i} = Y(obj.cvpart.test(i));
+                    obj.Y{i} = Y(obj.cvpart.test(i),:);
                 end
                 
                 parfor i = 1:obj.cvpart.NumTestSets                    
-                    train_Y = Y(~obj.cvpart.test(i));
+                    train_Y = Y(~obj.cvpart.test(i),:);
                     if isa(X,'image_vector')
                         train_dat = X.get_wh_image(~obj.cvpart.test(i));
                         test_dat = X.get_wh_image(obj.cvpart.test(i));

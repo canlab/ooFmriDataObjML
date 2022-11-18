@@ -102,7 +102,7 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
             % conversion to crossValPredict must be done on a fold by fold
             % basis to handle conversion of classification scores, but
             % we'll do it for both for consistency
-            obj.yfit = [];
+            [obj.yfit, obj.yfit_raw, obj.yfit_null] = deal([]);
             for i = 1:cvObj.cvpart.NumTestSets
                 this_baseEstimator = getBaseEstimator(cvObj.foldEstimator{i});
                 if  isa(this_baseEstimator,'modelClf')
@@ -124,8 +124,20 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
                     end
                         
                     obj.yfit = [obj.yfit; this_baseEstimator.decisionFcn(cvObj.yfit_raw{i}(:, resortIdx))];
+                    % the following two lines were added while modifying
+                    % this function for multivariate outcomes. Classifier
+                    % was not tested, so this may break implementation. If
+                    % so fix it or maybe comment it out.
+                    obj.yfit_raw = [obj.yfit_raw; cvObj.yfit_raw{i}(:,resortIdx)];
+                    obj.yfit_null = [obj.yfit_null; cvObj.yfit_null{i}(:,resortIdx)];
                 elseif isa(this_baseEstimator, 'modelRegressor')
-                    obj.yfit = [obj.yfit; cvObj.yfit_raw{i}];
+                    if ~isempty(cvObj.yfit_raw)
+                        obj.yfit = [obj.yfit; cvObj.yfit_raw{i}];
+                        obj.yfit_raw = [obj.yfit_raw; cvObj.yfit_raw{i}];
+                    end
+                    if ~isempty(obj.yfit_null)
+                        obj.yfit_null = [obj.yfit_null; cvObj.yfit_null{i}];
+                    end
                 else
                     error('Conversion of %s to crossValPredict is not supported', ...
                         class(cvObj));
@@ -138,8 +150,8 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
             % out what the fold sorting is and reversing it.
             [~,I] = sort(obj.fold_lbls);
             [~,II] = sort(I);
-            obj.yfit = obj.yfit(II);
-            obj.Y = obj.Y(II);
+            obj.yfit = obj.yfit(II,:);
+            obj.Y = obj.Y(II,:);
         end
         
         
@@ -188,10 +200,14 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
         
         %% dependent properties
         function val = get.classLabels(obj)
-            if iscell(obj.Y) % crossValScore
-                val = unique(cell2mat(obj.Y(:)), 'stable');
-            else % crossValPredict
-                val = unique(obj.Y, 'stable');
+            if isa(obj.estimator,'modelClf')
+                if iscell(obj.Y) % crossValScore
+                    val = unique(cell2mat(obj.Y(:)), 'stable');
+                else % crossValPredict
+                    val = unique(obj.Y, 'stable');
+                end
+            else
+                val = nan;
             end
         end
         
@@ -201,9 +217,9 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
         
         function val = get.fold_lbls(obj)
             if iscell(obj.Y) % crossValScore
-                val = zeros(sum(cellfun(@length,obj.Y)),1);
+                val = zeros(sum(obj.cvpart.TestSize), 1);
             else % crossValPredict
-                val = zeros(length(obj.Y),1);
+                val = zeros(obj.cvpart.NumObservations,1);
             end
             for i = 1:obj.cvpart.NumTestSets
                 assert(all(val(obj.cvpart.test(i)) == 0),...
