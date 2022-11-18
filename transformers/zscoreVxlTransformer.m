@@ -37,13 +37,25 @@ classdef zscoreVxlTransformer < baseTransformer
                 assert(ismatrix(dat.dat));
             end
             
+            
+            I = dummyvar(batch_id);
+            D = dat.dat';
+            cdat = D - I/(I'*I)*I'*D; % batch centered dat
+            cdat2 = cdat.^2;
+            vdat = I/(I'*I-diag(ones(size(I,2),1)))*I'*cdat2; 
+            clear cdat2;
+            dat.dat = (cdat./(vdat.^0.5))';
+            clear cdat vdat;
+            %{
             uniq_batch_id = unique(batch_id,'stable');
             n_batch_id = length(uniq_batch_id);
+            
             for i = 1:n_batch_id
                 this_batch = uniq_batch_id(i);
                 this_idx = find(this_batch == batch_id);
                 dat.dat(:,this_idx) = zscore(dat.dat(:, this_idx),[],2); % zscore row-wise
             end
+            %}
         end
     end
 end
