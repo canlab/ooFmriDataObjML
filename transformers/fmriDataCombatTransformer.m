@@ -108,11 +108,11 @@ classdef fmriDataCombatTransformer < baseTransformer
             n = size(dat.dat,2);
             dat = dat.cat(obj.ref_params).remove_empty();
             
-            batch_id = categorical(batch_id);
-            tmp_ref_id = categorical(max(double(batch_id)) + 1);
+            batch_id = double(categorical(batch_id));
+            tmp_ref_id = max(batch_id) + 1;
             while ismember(tmp_ref_id, batch_id)
                 % make sure this is unique, should be but just in case
-                tmp_ref_id = categorical(double(tmp_ref_id) + 1);
+                tmp_ref_id = double(tmp_ref_id) + 1;
             end
             batch_id = [batch_id(:)', repmat(tmp_ref_id,1,size(obj.ref_params.dat,2))];
             
