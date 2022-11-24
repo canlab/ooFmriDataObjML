@@ -266,7 +266,7 @@ classdef crossValScore < crossValidator % note this is not a yFit object, only c
                         
             % compute null scores
             obj.yfit_null = {};
-            obj.scores_null = zeros(1, obj.cvpart.NumTestSets);
+            obj.scores_null = zeros(obj.cvpart.NumTestSets, size(Y{1},2));
             for i = 1:obj.cvpart.NumTestSets                
                 tmp_yfit_raw = obj.foldEstimator{i}.score_null(sum(obj.cvpart.TestSize(i)));
                 
@@ -303,7 +303,7 @@ classdef crossValScore < crossValidator % note this is not a yFit object, only c
                 yfit.set_null(fold_Y); % superfluous but needed to avoid errors if using normalized metrics.
                 yfit.metadata = obj.scorer_metadata_constructor(obj, obj.cvpart.test(i));
                 
-                obj.scores_null(i) = obj.scorer(yfit);
+                obj.scores_null(i,:) = obj.scorer(yfit);
                 obj.yfit_null{i} = fold_yfit_null;
             end
         end
@@ -315,7 +315,7 @@ classdef crossValScore < crossValidator % note this is not a yFit object, only c
             t0 = tic;
             k = unique(obj.cvpart.NumTestSets);
             
-            obj.scores = zeros(k,1);
+            obj.scores = zeros(k,size(obj.Y{1},2));
             for i = 1:k
                 fold_Y = obj.Y{i};
                 fold_yfit_raw = obj.yfit_raw{i};
@@ -337,7 +337,7 @@ classdef crossValScore < crossValidator % note this is not a yFit object, only c
                 
                 yfit.metadata = obj.scorer_metadata_constructor(obj, obj.cvpart.test(i));
                 
-                obj.scores(i) = obj.scorer(yfit);
+                obj.scores(i,:) = obj.scorer(yfit);
             end
             obj.evalTimeScorer = toc(t0);
         end
