@@ -202,7 +202,12 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
         function val = get.classLabels(obj)
             if isa(obj.estimator,'modelClf')
                 if iscell(obj.Y) % crossValScore
-                    val = unique(cell2mat(obj.Y(:)), 'stable');
+                    %val = unique(cell2mat(obj.Y(:)), 'stable');
+                    % the above code throws an error when obj.Y is a cell
+                    % array of class labels. I'm going to remove cell2mat,
+                    % hopefully it doesn't break anything. - Bogdan
+                    % 11/26/22
+                    val = unique([obj.Y{:}], 'stable');
                 else % crossValPredict
                     val = unique(obj.Y, 'stable');
                 end
