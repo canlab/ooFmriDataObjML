@@ -207,7 +207,7 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
                     % array of class labels. I'm going to remove cell2mat,
                     % hopefully it doesn't break anything. - Bogdan
                     % 11/26/22
-                    val = unique([obj.Y{:}], 'stable');
+                    val = unique(cat(1,obj.Y{:}),'stable');
                 else % crossValPredict
                     val = unique(obj.Y, 'stable');
                 end
