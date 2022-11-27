@@ -21,6 +21,15 @@
 %               scalar value loss estimate. Default is get_mse(). yFit
 %               objects have yfit, yfit_null and Y properties
 %
+%   scorer_metadata_constructor - 
+%           - some scoring functions need some metadata to work. For
+%               instance within participant correlation requires knowledge
+%               of participant block labels. The
+%               scorer_metadata_constructor specifies how this is extracted
+%               from a crossValidator object. e.g. for the above exampe if 
+%               your cv constructor is cvpartition2 you might use this: 
+%               @(cvObj,id)(cvObj.cvpart.grp_id(id))
+%
 %   bayesOptOpts - same arguments you would normally supply to bayesopt if
 %               invoked directly (see help bayesOpt for details). Note that
 %               any optimizableVariable object must have 'Name' set to a
@@ -182,7 +191,7 @@ classdef bayesOptCV < baseEstimator
             this_cv.do(dat, Y);
             loss = mean(this_cv.scores); % might want to make this flexible (e.g. let user pick median or mode)
             
-            delete(this_cv) % not sure if this is needed. Are handles created in this function destroyed implicity after the function exists?
+            delete(this_cv) % not sure if this is needed. Are handles created in this function destroyed implicity after the function exits?
         end 
     end
 end
