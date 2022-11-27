@@ -86,7 +86,7 @@ classdef bayesOptCV < baseEstimator
             for i = 1:nargin-4
                 if ischar(varargin{i})
                     switch varargin{i}
-                        case 'scorer_metdata_constructor'
+                        case 'scorer_metadata_constructor'
                             obj.scorer_metadata_constructor = varargin{i+1};
                     end
                 end
