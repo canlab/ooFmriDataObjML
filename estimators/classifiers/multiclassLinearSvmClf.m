@@ -1,45 +1,24 @@
-% linearSvmClf a linearModelEstimator that fits a linear support
-%   vector machine classification model to data (X,Y) using the C (slack)
-%   parameterization by default and matlab's fitcecoc SVM implementation.
+% multiclassLinearSvmClf a linearModelEstimator that fits a linear support
+%   vector machine multiclass classification model to data (X,Y) using the 
+%   C (slack) parameterization by default and matlab's fitcecoc SVM 
+%   implementation.
 %
-% estimator = linearSvmRegressor([options])
+% estimator = multiclassLinearSvmClf([options])
 %
 %   options ::
 %
 %   'intercept' - true/false. Include intercept in univariate model. 
 %                   Default: true;
 %
-%   'C'         - Slack parameter. To use Lambda specification leave this 
-%                   unset and specify Lambda parameter in fitcecocOpts. 
-%                   Default C is used when neither is provided. Default: 1
-%
-%   'epsilon'   - Half width of epsilon intensive band. Can also be
-%                   specified as fitcecocOpts argument. See help
-%                   fitcecocOpts for default value.
+%   'lambda'    - Regularization parameter, between
+%                   [1e-5/NumObservations,1e5/NumObservations]
 %
 %   'regularization'
 %               - 'ridge', 'lasso', or 'none'
 %
 %   'fitcecocOpts'
-%               - cell array of options to pass through to firlinear. See
-%                   help fitrlinear for details. 
-%                 Note: fitcecoc uses the Lambda parameterization. If 
-%                   you specify a Lambda parameter here instead of a C 
-%                   parameter in the linearSvmClf constructor then 
-%                   that Lambda parameterization will be used. If you 
-%                   specify both Lambda in fitcecocOpts and C in the 
-%                   linearSvmClf constructor then a warning will be 
-%                   thrown and C will supercede Lambda.
-%                 Note: fitcecocOpts has the option of performing
-%                   hyperparameter optimization internally via kfold, hold
-%                   out or custom cvpartition specification. This is not
-%                   supported via linearSvmClf. Wrap linearSvmClf in a
-%                   hyperparameter optimization object like bayesOptCV
-%                   instead.
-%                   
-%
-%   Note: both lambda and C are hyperparameters, but you should NOT try to
-%   optimize both at the same time. Pick one parameterization only.
+%               - cell array of options to pass through to fitcecoc. See
+%                   help fitcecoc for details. 
 %
 %   Note: fitcecoc has a bunch optimization routines built in. These 
 %   have not yet been tested. It may be useful for lasso parameter
