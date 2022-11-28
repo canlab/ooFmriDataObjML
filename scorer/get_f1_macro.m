@@ -17,12 +17,16 @@ function err = get_f1_macro(yFitObj)
     
     f1 = 0;
     for i = 1:length(labels)
-        true_positive = (Y == labels(i)).*(yfit == labels(i));
-        precision = sum(true_positive)/sum(yfit == labels(i));
-    
-        recall = sum(true_positive)/sum(Y == labels(i)); % also known as the true positive rate
-    
-        f1 = f1 + 2 * precision * recall / (precision + recall);
+        if sum(yfit == labels(i))
+            true_positive = (Y == labels(i)).*(yfit == labels(i));
+            precision = sum(true_positive)/sum(yfit == labels(i));
+        
+            recall = sum(true_positive)/sum(Y == labels(i)); % also known as the true positive rate
+            
+            f1 = f1 + 2 * precision * recall / (precision + recall);
+        else
+            warning('No %s predicted, f1=0 for this label.', labels(i));
+        end
     end
     
     err = f1/length(labels); % average f1
