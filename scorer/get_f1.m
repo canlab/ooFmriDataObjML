@@ -11,7 +11,8 @@ function err = get_f1(yFitObj)
         f1 = 2 * precision * recall / (precision + recall);
     else
         warning('All labels assigned to a single class. Cannot compute precision, F1=0.');
+        f1 = 0;
     end
-    
+
     err = f1;
 end
