@@ -224,7 +224,7 @@ classdef crossValPredict < crossValidator & yFit
                         'XTickLabelRotation', 90)
                     for i = 1:length(uniq_val)
                         for j = 1:length(uniq_val)
-                            text(i,j,sprintf('%0.3f',cfmat(i,j)/sum(cfmat(:))));
+                            text(i,j,sprintf('%0.3f',cfmat(i,j)/sum(cfmat(:))),'HorizontalAlignment','center');
                         end
                     end
                     title('Classifier Confusion Matrix');

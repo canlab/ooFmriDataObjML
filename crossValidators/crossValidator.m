@@ -129,7 +129,7 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
                     % was not tested, so this may break implementation. If
                     % so fix it or maybe comment it out.
                     obj.yfit_raw = [obj.yfit_raw; cvObj.yfit_raw{i}(:,resortIdx)];
-                    obj.yfit_null = [obj.yfit_null; cvObj.yfit_null{i}(:,resortIdx)];
+                    %obj.yfit_null = [obj.yfit_null; cvObj.yfit_null{i}(:,resortIdx)]; % this appears to cause problems, and perhaps doesn't make sense here because yfit_null is not a score, but a classLabel
                 elseif isa(this_baseEstimator, 'modelRegressor')
                     if ~isempty(cvObj.yfit_raw)
                         obj.yfit = [obj.yfit; cvObj.yfit_raw{i}];
@@ -144,7 +144,8 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
                 end
             end
             
-            obj.Y = cell2mat(cvObj.Y(:));
+            %obj.Y = cell2mat(cvObj.Y(:)); % I think this fails for categorical labels or string labels of classifiers
+            obj.Y = cat(1,cvObj.Y{:});
             
             % yfit is currently sorted by fold, let's fix that by figuring
             % out what the fold sorting is and reversing it.

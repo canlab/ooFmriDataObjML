@@ -154,7 +154,8 @@ classdef crossValScore < crossValidator % note this is not a yFit object, only c
                         obj.yfit{i} = this_baseEstimator.decisionFcn(tmp_yfit_raw);
                         
                         assert(length(this_baseEstimator.classLabels) == length(obj.classLabels), ...
-                            'Number of class labels in Y don''t match number in Y partition. Check that cvpartitioner is appropriately straifying outcomes cross folds.');
+                            sprintf('Number of class labels in Y (%d) don''t match number in Y partition (%d). Check that cvpartitioner is appropriately straifying outcomes cross folds.', ...
+                                length(this_baseEstimator.classLabels),length(obj.classLabels)));
                         
                         nClasses = length(obj.classLabels);
                         if nClasses > 2
