@@ -200,7 +200,7 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
         
         %% dependent properties
         function val = get.classLabels(obj)
-            if isa(obj.estimator,'modelClf')
+            if isa(obj.estimator.getBaseEstimator,'modelClf')
                 if iscell(obj.Y) % crossValScore
                     %val = unique(cell2mat(obj.Y(:)), 'stable');
                     % the above code throws an error when obj.Y is a cell
