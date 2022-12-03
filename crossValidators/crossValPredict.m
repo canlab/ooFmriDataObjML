@@ -207,15 +207,15 @@ classdef crossValPredict < crossValidator & yFit
                     else
                         Y = obj.Y;
                     end
-                    cfmat = confusionmat(Y,obj.yfit);
+                    cfmat = confusionmat(obj.yfit,Y);
                     
                     uniq_val = cellstr(categorical(obj.classLabels));
                     uniq_val = strrep(uniq_val,'_','');
                     
                     [uniq_val_pred, uniq_val_obs] = deal(cell(size(uniq_val)));
                     for i = 1:length(uniq_val)
-                        uniq_val_pred{i} = [uniq_val{i}, ' ', sprintf('%0.3f',sum(cfmat(:,i))./sum(cfmat(:)))];
-                        uniq_val_obs{i} = [uniq_val{i}, ' ', sprintf('%0.3f',sum(cfmat(i,:),2)./sum(cfmat(:)))];
+                        uniq_val_pred{i} = [uniq_val{i}, ' ', sprintf('%0.3f',sum(cfmat(i,:),2)./sum(cfmat(:)))];
+                        uniq_val_obs{i} = [uniq_val{i}, ' ', sprintf('%0.3f',sum(cfmat(:,i))./sum(cfmat(:)))];
                     end
 
                     varargout{:} = imagesc(cfmat, varargin{:});
