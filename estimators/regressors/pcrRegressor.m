@@ -1,3 +1,8 @@
+% this should be replaced with a PCA transformer, since a PCA 
+% transformer enchained with OLS gives you a PCR classifier, but
+% is also more flexible and can be used in other applications
+% like principal component classification if combined with a 
+% classification algorithm like logistic regression
 classdef pcrRegressor < linearModelEstimator & modelRegressor
     properties
         numcomponents = [];
