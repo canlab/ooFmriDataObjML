@@ -44,14 +44,14 @@
 %               when hyperparameters differ across folds
 %
 % crossValScore methods:
-%   do      - crossValScore = cvEstimator.fit(fmri_data, Y) performs
+%   do      - crossValScore = cvEstimator.do(fmri_data, Y) performs
 %               cross validated predictions using fmri_data to predict Y.
 %               Unlike crossValPredict, crossValScore then computes scores
 %               for each fold using obj.scorer which are saved in 
 %               obj.scores. If the scorer changes between obj.do()
 %               invocations, the Y predictions of previous calls are reused
-%               for computational efficiency. If the partitioning scheme
-%               changes (e.g. by invoking obj.set_cvpart or
+%               when scoring for computational efficiency. If the partitioning
+%               scheme changes (e.g. by invoking obj.set_cvpart or
 %               obj.repartition) then new yfit predictions are computed.
 %   do_null - fits null model with cross validation
 %   set_cvpart 
@@ -66,10 +66,6 @@
 %               method but if you wish to evaluate new fits you should also
 %               invoke obj.repartition() or obj.set_cvpart(cvpartition)
 %               with an appropriate cvpartition object.
-%
-% 
-% ToDo:
-%   This needs a major update to support non-kfold partitioning schemes
 
 classdef crossValScore < crossValidator % note this is not a yFit object, only crossValPredict is
     properties
