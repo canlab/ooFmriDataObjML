@@ -44,7 +44,7 @@ classdef features < double
                           else
                              sref = subsref(sref.(s(1).subs), s(2:end));
                           end
-                      case 'dat'
+                      case 'data'
                          d = double(sref);
                          if length(s)<2
                             sref = d;
@@ -89,11 +89,11 @@ classdef features < double
                          obj.metadata = b;
                       case 'data'
                          if length(s)<2
-                            obj = features(b,obj.DataString);
+                            obj = features(b,obj.metadata);
                          elseif length(s)>1 && strcmp(s(2).type,'()')
                             d = double(obj);
                             newd = subsasgn(d,s(2:end),b);
-                            obj = features(newd,obj.DataString);
+                            obj = features(newd,obj.metadata);
                          end
                       otherwise
                          error('Not a supported indexing expression')

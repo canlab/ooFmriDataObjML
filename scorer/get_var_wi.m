@@ -5,7 +5,7 @@ function err = get_var_wi(yFitObj, batch_id_funhan)
     
     id = batch_id_funhan(yFitObj);
     
-    assert(length(id) == length(yFitObj.Y),'Unsatisfied Requirement: length(id) == length(yFitObj.Y)');
+    assert(length(id) == length(yFitObj.Y),sprintf('Expected: length(id) == length(yFitObj.Y), but got %d and %d instead', length(id), length(yFitObj.Y)));
         
     [~,Y_wi] = splitVar(yFitObj.Y, id);
     [~,yfit_wi] = splitVar(yFitObj.yfit, id);

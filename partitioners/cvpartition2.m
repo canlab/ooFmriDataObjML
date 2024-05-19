@@ -9,6 +9,11 @@
 %
 %   'GroupKFold' - Followed by a scalar K indicate number of k-folds to use
 %
+%   'invGroupKFold' - Similar to GroupKFold, but one group is used for
+%                   training and all remaining groups are used for testing.
+%                   Designed for testing out of study or out of subject 
+%                   generalization.
+%
 %   'Group'  - Followed by vector with one element per observation
 %                   containing a label specifying that observations
 %                   grouping. For instance if you have 5 observations from
@@ -21,15 +26,22 @@
 classdef cvpartition2 < cvpartition
     properties (SetAccess = protected)
         grp_id;
+        invGroupKFold = false;
     end
+    
     methods
         % C = cvpartition2(group, 'GroupKFold', K, 'Group', grp_id)
         function cv = cvpartition2(varargin)
             [grp_id, delete] = deal([]);
+            invGroupKFold = false;
             for i = 1:length(varargin)
                 if ischar(varargin{i})
                     switch varargin{i}
                         case 'GroupKFold'
+                            k = varargin{i+1};
+                            varargin{i} = 'KFold';
+                        case 'invGroupKFold'
+                            invGroupKFold = true;
                             k = varargin{i+1};
                             varargin{i} = 'KFold';
                         case 'Group'
@@ -49,11 +61,12 @@ classdef cvpartition2 < cvpartition
             varargin(delete) = [];
             
             cv@cvpartition(varargin{:});
-            Impl = cvpartitionInMemoryImpl2(grp_id,varargin{:});
+            Impl = cvpartitionInMemoryImpl2(grp_id,invGroupKFold,varargin{:});
             Impl = Impl.updateParams();
             cv.Impl = Impl;
             
             cv.grp_id = grp_id;
+            cv.invGroupKFold = invGroupKFold;
         end % cvpartition constructor
         
         function obj = set_grp_id(obj,val)
@@ -61,20 +74,39 @@ classdef cvpartition2 < cvpartition
             obj.Impl = obj.Impl.set_grp_id(val);
             obj.grp_id = val;
         end
+                
         
-        %{
         function testidx = test(cv,varargin)
-            testidx = test(cv.Impl,varargin{:});
-            uniq_grp_id = unique(cv.grp_id);
-            test_grp_id = uniq_grp_id(testidx);
-            testidx = ismember(cv.grp_id,test_grp_id);
+            if cv.invGroupKFold
+                testidx = training(cv.Impl, varargin{:});
+            else
+                testidx = test(cv.Impl,varargin{:});
+            end
         end
         
         function trainidx = training(cv,varargin)
-            trainidx = training(cv.Impl,varargin{:});
-            uniq_grp_id = unique(cv.grp_id);
-            train_grp_id = uniq_grp_id(trainidx);
-            trainidx = ismember(cv.grp_id,train_grp_id);
+            if cv.invGroupKFold
+                trainidx = test(cv.Impl, varargin{:});
+            else
+                trainidx = training(cv.Impl,varargin{:});
+            end
+        end
+        
+        %{
+        function s = get.TrainSize(cv)
+            if cv.Impl.invGroupKFold
+                s = cv.Impl.TestSize;
+            else
+                s = cv.Impl.TrainSize;
+            end
+        end
+        
+        function s = get.TestSize(cv)
+            if cv.invGroupKFold
+                s = cv.Impl.TrainSize;
+            else
+                s = cv.Impl.TestSize;
+            end
         end
         %}
     end    

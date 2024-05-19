@@ -6,7 +6,8 @@ classdef mlpcrRegressor < linearModelEstimator & modelRegressor
         cpca = false;
         randInt = false;
         randSlope = false;
-        batch_id_funhan = @(X)((1:size(X,1))')
+        %batch_id_funhan = @(X)((1:size(X,1))')
+        batch_id_funhan = [];
         fitlmeOpts = {'CovariancePattern','isotropic'};
     end
     

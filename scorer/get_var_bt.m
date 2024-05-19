@@ -14,5 +14,8 @@ function err = get_var_bt(yFitObj, batch_id_funhan)
     assert(mean(yfit_bt) < tol, 'Biased yfit_bt returned. This shouldn''t happen.');
     % because Y_wi and yfit_wi are unbiased, we can just use var to compute
     % the corresponding MSE fraction
-    err = var(Y_bt - yfit_bt,1);
+    %err = var(Y_bt - yfit_bt,1);
+    % changing this to make it more general
+    assert(abs(mean(Y_bt - yfit_bt)) < 10e-8);
+    err = mean((Y_bt - yfit_bt).^2);
 end

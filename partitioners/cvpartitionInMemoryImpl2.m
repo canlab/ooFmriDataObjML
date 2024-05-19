@@ -3,11 +3,22 @@
 classdef cvpartitionInMemoryImpl2 < internal.stats.cvpartitionInMemoryImpl
     properties (SetAccess = private)
         grp_id = []
+        inverseTrainTest = false;
     end
     methods
-        function obj = cvpartitionInMemoryImpl2(grp_id, varargin)
+        function obj = cvpartitionInMemoryImpl2(grp_id, inverse, varargin)
             obj = obj@internal.stats.cvpartitionInMemoryImpl(varargin{:});
             [~,~,obj.grp_id] = unique(grp_id,'stable');
+            
+            
+            if inverse
+                TestSize = obj.TestSize;
+                TrainSize = obj.TrainSize;
+                obj.TrainSize = TestSize;
+                obj.TestSize = TrainSize;
+                obj.inverseTrainTest = true;
+            end
+            
         end
         
         function obj = repartition(obj, varargin)
@@ -50,6 +61,7 @@ classdef cvpartitionInMemoryImpl2 < internal.stats.cvpartitionInMemoryImpl
             end
             obj.Group = newGroup;
         end
+        
     end
     
     methods (Access = ?cvpartition2)        
@@ -57,8 +69,13 @@ classdef cvpartitionInMemoryImpl2 < internal.stats.cvpartitionInMemoryImpl
             if ~isempty(obj.grp_id)
                 obj.N = length(obj.grp_id);
                 for i = 1:obj.NumTestSets
-                    obj.TrainSize(i) = sum(ismember(obj.grp_id,find(obj.training(i))));
-                    obj.TestSize(i) = sum(ismember(obj.grp_id,find(obj.test(i))));
+                    if obj.inverseTrainTest
+                        obj.TestSize(i) = sum(ismember(obj.grp_id,find(obj.training(i))));
+                        obj.TrainSize(i) = sum(ismember(obj.grp_id,find(obj.test(i))));
+                    else
+                        obj.TrainSize(i) = sum(ismember(obj.grp_id,find(obj.training(i))));
+                        obj.TestSize(i) = sum(ismember(obj.grp_id,find(obj.test(i))));
+                    end
                 end
                 [newIndices, newGroup] = deal(zeros(obj.N,1));
                 uniq_grp_id = unique(obj.grp_id);
@@ -70,7 +87,7 @@ classdef cvpartitionInMemoryImpl2 < internal.stats.cvpartitionInMemoryImpl
                 end
                 obj.indices = newIndices;
                 obj.Group = newGroup;
-
+                
                 if ~isempty(obj.holdoutT)
                     warning('cvpartitionMemoryImpl2:updateParams',['Warning obj.holdoutT is not empty. Using this ',...
                         'function in this manner has not been tested. Please ',...
