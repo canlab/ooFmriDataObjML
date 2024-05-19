@@ -23,7 +23,9 @@ function err = get_f1_macro(yFitObj)
         
             recall = sum(true_positive)/sum(Y == labels(i)); % also known as the true positive rate
             
-            f1 = f1 + 2 * precision * recall / (precision + recall);
+	    if precision + recall > 0
+	        f1 = f1 + 2 * precision * recall / (precision + recall);
+            end
         else
             warning('No %s predicted, f1=0 for this label.', labels(i));
         end
