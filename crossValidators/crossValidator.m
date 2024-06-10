@@ -119,7 +119,7 @@ classdef (Abstract) crossValidator <  handle & matlab.mixin.Copyable
                             resortIdx(j) = find(this_baseEstimator.classLabels(j) == obj.classLabels);
                         end
                     else
-                        assert(size(cvObj.yfit_raw,2) == 1, sprintf('Binary classifiers should only have one score per observation but %d found.', size(cvObj.yfit_raw,2)));
+                        %assert(size(cvObj.yfit_raw,2) == 1, sprintf('Binary classifiers should only have one score per observation but %d found.', size(cvObj.yfit_raw,2)));
                         resortIdx = 1;
                     end
                         

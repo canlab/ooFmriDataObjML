@@ -24,7 +24,7 @@ classdef functionTransformer < baseTransformer
             obj.fitTime = toc(t0);
         end
         
-        function X = transform(obj, X)
+        function X = transform(obj, X, varargin)
             assert(obj.isFitted,'Please call functionTransformer.fit() before functionTransformer.transform().');
             
             if isa(X,'features')

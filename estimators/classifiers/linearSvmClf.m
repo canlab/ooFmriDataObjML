@@ -151,6 +151,7 @@ classdef linearSvmClf < linearModelEstimator & modelClf
                             end
                         case 'regularization'
                             obj.regularization = varargin{i+1};
+                            varargin{i+1} = [];
                         case 'fitclinearOpts'
                             continue;
                         otherwise

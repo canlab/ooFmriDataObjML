@@ -32,6 +32,9 @@ classdef cvpartition2 < cvpartition
     methods
         % C = cvpartition2(group, 'GroupKFold', K, 'Group', grp_id)
         function cv = cvpartition2(varargin)
+            if ~verLessThan('matlab','23.2.0.2380103')
+                error('R2023b broke cvpartition2. Try the new CustomPartition option of cvpartition instead.')
+            end
             [grp_id, delete] = deal([]);
             invGroupKFold = false;
             for i = 1:length(varargin)

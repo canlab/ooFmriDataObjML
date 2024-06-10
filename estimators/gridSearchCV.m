@@ -27,6 +27,15 @@
 %               scalar value loss estimate. Default is get_mse(). yFit
 %               objects have yfit, yfit_null and Y properties
 %
+%   scorer_metadata_constructor - 
+%           - some scoring functions need some metadata to work. For
+%               instance within participant correlation requires knowledge
+%               of participant block labels. The
+%               scorer_metadata_constructor specifies how this is extracted
+%               from a crossValidator object. e.g. for the above exampe if 
+%               your cv constructor is cvpartition2 you might use this: 
+%               @(cvObj,id)(cvObj.cvpart.grp_id(id))
+%
 % Optional ::
 %
 %   verbose - true/false. Default: false
@@ -62,6 +71,7 @@ classdef gridSearchCV < baseEstimator
         estimator = [];
         cv = @(dat,Y)cvpartition(ones(length(dat.Y),1),'KFold', 5)
         scorer = [];
+        scorer_metadata_constructor = @(cvObj,id)([]);
         
         verbose = false;
         n_parallel = 1;
@@ -73,6 +83,7 @@ classdef gridSearchCV < baseEstimator
     
     properties (SetAccess = private)
         group_id = [];
+        loss = [];
     end
     
     properties (Access = ?Estimator)
@@ -81,6 +92,15 @@ classdef gridSearchCV < baseEstimator
     
     methods
         function obj = gridSearchCV(estimator, gridPoints, cv, scorer, varargin)
+            for i = 1:nargin-4
+                if ischar(varargin{i})
+                    switch varargin{i}
+                        case 'scorer_metadata_constructor'
+                            obj.scorer_metadata_constructor = varargin{i+1};
+                    end
+                end
+            end
+
             obj.estimator = copy(estimator);
             if ~isempty(cv), obj.cv = cv; end
 
@@ -163,8 +183,9 @@ classdef gridSearchCV < baseEstimator
                     end
                 end
             end
+            obj.loss = loss;
             %%
-            this_hyp = obj.gridPoints(find(loss == min(loss), 1, 'first'),:);
+            this_hyp = obj.gridPoints(find(obj.loss == min(obj.loss), 1, 'first'),:);
             
             params = obj.estimator.get_params();
             for i = 1:length(this_hyp.Properties.VariableNames)
@@ -223,7 +244,7 @@ classdef gridSearchCV < baseEstimator
             end
             
             this_cv = crossValScore(this_estimator, obj.cv, obj.scorer, 'repartOnFit', true, 'n_parallel', 1, 'verbose', false);
-            this_cv.scorer_metadata_constructor = @(cvObj,id)(cvObj.cvpart.grp_id(id));
+            this_cv.scorer_metadata_constructor = obj.scorer_metadata_constructor;
             
             % get associated loss
             this_cv.do(dat, Y);

@@ -68,7 +68,7 @@ classdef pipeline < baseEstimator & baseTransformer
             for i = 1:length(obj.transformers)
                 % output from one transformer is input to the next
                 if obj.verbose, fprintf('Fitting %s\n', obj.transformer_names{i}); end
-                dat = obj.transformers{i}.fit_transform(dat);            
+                dat = obj.transformers{i}.fit_transform(dat, Y);            
             end
             if ~isempty(obj.estimator)
                 if obj.verbose, fprintf('Fitting %s\n', obj.estimator_name); end

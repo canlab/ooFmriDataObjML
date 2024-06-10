@@ -19,6 +19,10 @@
 %   'fitcecocOpts'
 %               - cell array of options to pass through to fitcecoc. See
 %                   help fitcecoc for details. 
+%               - Note: It's usually a good idea to standardize your data.
+%               The best way to do this is to use the StandardScalar 
+%               transformer, but an alternative is to use the fitcecocOpts
+%               {'Learners', templateSVM('Standardize',true)}
 %
 %   Note: fitcecoc has a bunch optimization routines built in. These 
 %   have not yet been tested. It may be useful for lasso parameter
@@ -63,6 +67,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
     properties (SetAccess = protected)         
         NClasses = 2;
         nClf = 1;
+        nFeatures = 0;
         
         Mdl = [];
         learnerTemplates = {};
@@ -188,7 +193,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
                             scoreFcn = fitcecocOpts{i + 1};
                         case 'FitBias'
                             intercept = logical(fitcecocOpts{i+1});
-                        case 'Learner'
+                        case 'Learners'
                             learner = fitcecocOpts{i+1};
                         case 'Regularization'
                             regularization = fitcecocOpts{i+1};
@@ -196,8 +201,6 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
                             fitcecocOpts{i+1} = [];
                         case 'Cost'
                             error('Cost option to fitcecoc is not implemented in multiclassLinearSvmClf');
-                        case 'Learners'
-                            error('Learners options in fitcecoc are not currently implemented for multiclassLinearSvmClf objects.');
                         case 'KFold'
                             error('Internal cross validation is not supported. Please wrap linearSvmClf in a bayesOptCV object or similar instead');
                         case 'CVPartition'
@@ -226,6 +229,8 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
                     switch(varargin{i})
                         case 'NClasses'
                             continue; % already handled
+                        case 'fitcecocOpts'
+                            continue;
                         case 'C'
                             warning('Only Lambda classification is supported by multiclassLinearSVMClf');
                         otherwise
@@ -249,6 +254,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
                                     
             for i = 1:obj.nClf
                 obj.Mdl = fitcecoc(double(X), Y, obj.fitcecocOpts{:});
+                obj.nFeatures = size(X,2);
 
                 if isa(obj.Mdl,'ClassificationPartitionedLinear')
                     error('multiclassLinearSvmClf does not support using fitcecoc''s internal cross validation. Please wrap multiclassLinearSvmClf in a crossValScore() object instead.');
@@ -274,7 +280,7 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
             yfit_raw = obj.scoreFcn(yfit_raw);
             
             st_idx = find(strcmp(obj.fitcecocOpts, 'ScoreTransform'));
-            if ~(strcmp(obj.fitcecocOpts{st_idx+1},'none') || strcmp(obj.fitcecocOpts{st_idx+1}, 'identity'))
+            if ~isempty(st_idx) && ~(strcmp(obj.fitcecocOpts{st_idx+1},'none') || strcmp(obj.fitcecocOpts{st_idx+1}, 'identity'))
                 warning('linearSvmClf.score_null() behavior has not been validated with non-trivial scoreFcn. Please check the results.');
             end
         end
@@ -299,17 +305,31 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
                 loss(:,k) = tmp./weighting;
             end
             
-            [a,b] = find(loss == min(loss,[],2));
-            [~,I] = sort(a);
-            labels = obj.classLabels(b(I));            
+            % note: if there's a tie this will return the first index, so
+            % there's a bias which can severely affect null models.
+            [~,I] = min(loss,[],2);
+            labels = obj.classLabels(I);            
         end
         
         %% methods for dependent properties
         
         function val = get.B(obj)
-            val = [];
+            val = repmat({[]},1,obj.nClf);
             if ~isempty(obj.Mdl)
-                val = cell2mat(cellfun(@(x1)(x1.Beta(:)), obj.Mdl.BinaryLearners, 'UniformOutput', false)');
+                for i = 1:obj.nClf
+                    if ~isempty(obj.Mdl.BinaryLearners) && ~isempty(obj.Mdl.BinaryLearners{i}.Beta)
+                        val{i} = obj.Mdl.BinaryLearners{i}.Beta(:);
+                    end
+                end
+                
+                % handle edge cases
+                for i = 1:obj.nClf
+                    if isempty(val{i})
+                        warning('Failed to retrieve betas from ECOC BinaryLearners. This can happen if you have insufficient data to train the classifier (e.g. n <= NClasses). Returning zero betas for class %s',obj.classLabels(i));
+                        val{i} = zeros(obj.nFeatures,1);
+                    end
+                end
+                val = cell2mat(val);   
             end
         end
         
@@ -395,9 +415,10 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
                                     
             % sync fitcecoc args
             st_idx = find(strcmp(obj.fitcecocOpts, 'ScoreTransform'));
-            if isempty(st_idx)
-                obj.fitcecocOpts = [obj.fitcecocOpts, {'ScoreTransform', val}];
-            else
+            %if isempty(st_idx)
+            %    obj.fitcecocOpts = [obj.fitcecocOpts, {'ScoreTransform', val}];
+            %else
+            if ~isempty(st_idx)
                 obj.fitcecocOpts{st_idx + 1} = val;
             end
         end
@@ -477,7 +498,6 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         % properties of a particular classifier.
         
         function set_learner(obj, val, clfIdx)
-            val = char(val);
             obj.learnerTemplates{clfIdx}.ModelParams.Learner = val;
         end
         
@@ -499,7 +519,11 @@ classdef multiclassLinearSvmClf < linearModelEstimator & modelClf
         end
         
         function val = get_lambda(obj, clfIdx)  
-            val = obj.learnerTemplates{clfIdx}.ModelParams.Lambda;
+            if ismember('Lambda',fieldnames(obj.learnerTemplates{clfIdx}.ModelParams))
+                val = obj.learnerTemplates{clfIdx}.ModelParams.Lambda;
+            else
+                val = [];
+            end
         end
         
         function set_regularization(obj, val, clfIdx)           

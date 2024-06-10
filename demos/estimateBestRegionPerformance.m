@@ -8,7 +8,7 @@
 % examples of how you might go about designing your own. I kind of suspect
 % a random slope, random intercept mixed model likelihood function would be
 % best, however it would be much slower to evaluate.
-
+%{
 close all; clear all;
 
 %% import libraries and their dependencies
@@ -40,6 +40,7 @@ parpool(8)
 %% load data and masks
 
 nsf = load_image_set('nsf');
+%}
 nsfStim = avgByStimLvl2(nsf, double(categorical(nsf.metadata_table.subject_id)), nsf.metadata_table.T); % not the same as single trial predictions, but faster so good for a demo
 
 nsfStim = nsfStim.apply_mask(fmri_mask_image(which('gray_matter_mask.img')));
@@ -58,7 +59,7 @@ nsfStim = nsfStim.apply_mask(buckner); % this will drop subcortical and cerebell
 % hyperparam selection. It's usage will be demonstrated subsequently.
 
 alg = plsRegressor();
-inner_cv = @(X,Y) cvpartition2(length(Y), 'GroupKFold', 5, 'Group', X.metadata); % this is modeled after the native matlab cvpartition object.
+inner_cv = @(X,Y) cvpartition2(ones(length(Y),1), 'GroupKFold', 5, 'Group', X.metadata); % this is modeled after the native matlab cvpartition object.
 % notice that inner_cv is a function, not a cvpartition2 object. Calling
 % inner_cv on some data will return a appropriately constructed
 % cvpartition2 object. This is important because crossValidator objects

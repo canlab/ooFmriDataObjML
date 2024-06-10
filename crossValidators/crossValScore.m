@@ -334,7 +334,11 @@ classdef crossValScore < crossValidator % note this is not a yFit object, only c
                 
                 yfit.metadata = obj.scorer_metadata_constructor(obj, obj.cvpart.test(i));
                 
-                    obj.scores(i,:) = obj.scorer(yfit);
+                try
+                obj.scores(i,:) = obj.scorer(yfit);
+                catch
+                    keyboard
+                end
             end
             obj.evalTimeScorer = toc(t0);
         end

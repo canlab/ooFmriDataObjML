@@ -14,10 +14,10 @@ classdef baseTransformer < handle & matlab.mixin.Copyable
         transform(obj)
     end
     methods
-        function dat = fit_transform(obj, varargin)
+        function dat = fit_transform(obj, dat, varargin)
             t0 = tic;
-            obj.fit(varargin{:});
-            dat = obj.transform(varargin{:});
+            obj.fit(dat, varargin{:});
+            dat = obj.transform(dat);
             obj.fitTransformTime = toc(t0);
         end
         
