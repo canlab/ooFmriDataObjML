@@ -64,6 +64,7 @@ classdef pcaTransformer < baseTransformer
         end
 
         function n = get.numcomponents(obj)
+            nc_ind = [];
             for i = 1:length(obj.pca_args)
                 if ischar(obj.pca_args{i}) && strcmp(obj.pca_args{i}, 'NumComponents')
                     nc_ind = i;
