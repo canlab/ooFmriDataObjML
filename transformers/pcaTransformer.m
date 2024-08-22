@@ -9,7 +9,7 @@ classdef pcaTransformer < baseTransformer
     properties(SetAccess = protected)
         coeffs = [];
     end
-    properties(SetAccess = Dependent)
+    properties(Dependent = true)
         numcomponents
     end
     properties (Access = ?baseTransformer)
@@ -52,7 +52,7 @@ classdef pcaTransformer < baseTransformer
             dat = dat*obj.coeffs;
         end
 
-        function = set.numcomponents(obj,n)
+        function set.numcomponents(obj,n)
             % if NumComponents is specified already, remove it and its argument
             nc_ind = find(ismember(obj.pca_args,'NumComponents'));
             if ~isempty(nc_ind)
