@@ -72,8 +72,6 @@ classdef pcaTransformer < baseTransformer
                     break;
                 end
             end
-
-            return n
         end
     end
 end
