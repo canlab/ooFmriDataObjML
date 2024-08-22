@@ -69,6 +69,7 @@ classdef pcaTransformer < baseTransformer
             for i = 1:length(obj.pca_args)
                 if ischar(obj.pca_args{i}) && strcmp(obj.pca_args{i}, 'NumComponents')
                     n = obj.pca_args{i+1};
+                    break;
                 end
             end
 
