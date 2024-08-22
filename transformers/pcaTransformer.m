@@ -64,18 +64,15 @@ classdef pcaTransformer < baseTransformer
         end
 
         function n = get.numcomponents(obj)
-            nc_ind = [];
+            n = [];
+            
             for i = 1:length(obj.pca_args)
                 if ischar(obj.pca_args{i}) && strcmp(obj.pca_args{i}, 'NumComponents')
-                    nc_ind = i;
-                    break;
+                    n = obj.pca_args{i+1};
                 end
             end
-            if isempty(nc_ind)
-                n = [];
-            else
-                n = obj.pca_args{nc_ind+1};
-            end
+
+            return n
         end
     end
 end
