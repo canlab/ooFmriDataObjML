@@ -65,7 +65,7 @@ classdef pcaTransformer < baseTransformer
 
         function n = get.numcomponents(obj)
             strargs = ismember(cellfun(@class, obj.pca_args, 'UniformOutput', false), 'char')
-            nc_ind = find(obj.pca_args(strargs),'NumComponents'));
+            nc_ind = find(ismember(obj.pca_args(strargs),'NumComponents'));
             if isempty(nc_ind)
                 n = [];
             else
