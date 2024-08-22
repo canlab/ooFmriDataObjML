@@ -9,8 +9,11 @@ classdef pcaTransformer < baseTransformer
     properties(SetAccess = protected)
         coeffs = [];
     end
+    properties(SetAccess = Dependent)
+        numcomponents
+    end
     properties (Access = ?baseTransformer)
-       	hyper_params = {};
+       	hyper_params = {'numcomponents'};
     end
     
     methods
@@ -47,6 +50,26 @@ classdef pcaTransformer < baseTransformer
             end
 
             dat = dat*obj.coeffs;
+        end
+
+        function = set.numcomponents(obj,n)
+            % if NumComponents is specified already, remove it and its argument
+            nc_ind = find(ismember(obj.pca_args,'NumComponents'));
+            if ~isempty(nc_ind)
+                obj.pca_args{[nc_ind, nc_ind+1]} = [];
+            end
+
+            % assign new component and argument to params
+            obj.pca_args = [obj.pca_args, 'NumComponents', n];
+        end
+
+        function n = get.numcomponents(obj)
+            nc_ind = find(ismember(obj.pca_args,'NumComponents'))
+            if isempty(nc_ind)
+                n = [];
+            else
+                n = obj.pca_args{nc_ind+1};
+            end
         end
     end
 end
