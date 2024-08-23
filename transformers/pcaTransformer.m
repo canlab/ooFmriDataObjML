@@ -49,8 +49,6 @@ classdef pcaTransformer < baseTransformer
             end
             if iscentered
                 dat = (dat - mean(dat));
-            else
-                dat = (dat - mean(dat));
             end
 
             dat = dat*obj.coeffs;
