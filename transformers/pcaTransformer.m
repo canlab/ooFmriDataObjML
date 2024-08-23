@@ -40,11 +40,15 @@ classdef pcaTransformer < baseTransformer
         
         function dat = transform(obj, dat)
             assert(obj.isFitted,'Please call pcaTransformer.fit() before pcaTransformer.transform().');
-            
-            if ismember('Centered', obj.pca_args)
-                if obj.pca_args{find(ismember(obj.pca_args,'Centered')) + 1}
-                    dat = (dat - mean(dat));
+
+            iscentered = false;
+            for i = 1:length(obj.pca_args)
+                if ischar(obj.pca_args{i}) && strcmp(obj.pca_args{i}, 'Centered')
+                    iscentered = obj.pca_args{i+1};
                 end
+            end
+            if iscentered
+                dat = (dat - mean(dat));
             else
                 dat = (dat - mean(dat));
             end
@@ -54,7 +58,12 @@ classdef pcaTransformer < baseTransformer
 
         function set.numcomponents(obj,n)
             % if NumComponents is specified already, remove it and its argument
-            nc_ind = find(ismember(obj.pca_args,'NumComponents'));
+            nc_ind = [];
+            for i = 1:length(obj.pca_args)
+                if ischar(obj.pca_args{i}) && strcmp(obj.pca_args{i}, 'NumComponents')
+                    nc_ind = i;
+                end
+            end
             if ~isempty(nc_ind)
                 obj.pca_args{[nc_ind, nc_ind+1]} = [];
             end
